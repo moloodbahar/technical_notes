@@ -1,0 +1,47 @@
+---
+title: counties, districts & republican vote shares
+author: ''
+date: '2020-02-17'
+slug: counties-districts-republican-vote-shares
+categories: []
+tags: []
+---
+
+
+
+<p>Distribution of Republican vote by county &amp; district for last three presidential elections.</p>
+<div id="counties" class="section level2">
+<h2>Counties</h2>
+<p>County-level voting returns for presidential elections 2008, 2012 &amp; 2016. Via the <a href="https://github.com/MEDSL/county-returns">MIT Election Data and Science Lab</a>.</p>
+<pre class="r"><code>library(tidyverse)
+county &lt;- read.csv(url(&#39;https://raw.githubusercontent.com/MEDSL/county-returns/master/countypres_2000-2016.csv&#39;)) %&gt;%
+  filter(party == &#39;republican&#39; &amp; year %in% c(&#39;2008&#39;, &#39;2012&#39;, &#39;2016&#39;)) %&gt;%
+  mutate(republican = round(candidatevotes/totalvotes*100,1), 
+         geo = &#39;county&#39;) %&gt;%
+  select(geo, year, republican, totalvotes)</code></pre>
+</div>
+<div id="districts" class="section level2">
+<h2>Districts</h2>
+<p>Congressional district voting returns for the same elections. Made available via <code>uspoliticalextras</code>. &amp; from MIT Election Data and Science Lab.</p>
+<pre class="r"><code>disty &lt;- uspoliticalextras::uspol_dkos_returns_pres_cd %&gt;%
+  mutate(geo = &#39;district&#39;,
+         totalvotes = 1) %&gt;%
+  select(geo, year, republican,  totalvotes)</code></pre>
+</div>
+<div id="republican-vote-shares" class="section level2">
+<h2>Republican vote shares</h2>
+<p>Percentage of total votes cast for the Republican nominee by geography. Counties are weighted by population, as approximated by total votes cast.</p>
+<pre class="r"><code>bind_rows(disty, county) %&gt;%
+  group_by(geo, year) %&gt;%
+  mutate(weigh_group = sum(totalvotes)) %&gt;%
+  
+  ggplot(aes(republican, color = geo, linetype = geo,
+             weight = totalvotes/weigh_group)) + # weight = totalvotes,
+  geom_density(size = 1) + #bw = 0.025
+  facet_wrap(~year)</code></pre>
+<p><img src="/post/2020-02-17-counties-districts-republican-vote-shares_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+</div>
+<div id="references" class="section level2">
+<h2>References</h2>
+<p>McCarty, Nolan, Keith T Poole, and Howard Rosenthal. 2016. <em>Polarized America: The Dance of Ideology and Unequal Riches</em>. mit Press.</p>
+</div>

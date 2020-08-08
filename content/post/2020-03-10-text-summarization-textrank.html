@@ -1,0 +1,179 @@
+---
+title: text summarization & textrank
+author: ''
+date: '2020-03-10'
+slug: text-summarization-textrank
+categories: []
+tags: []
+---
+
+
+
+<div id="grab-some-articles-from-googlenews" class="section level2">
+<h2>Grab some articles from GoogleNews</h2>
+<pre class="r"><code>library(tidyverse)
+topstories_meta &lt;- quicknews::qnews_get_meta (language=&quot;en&quot;,
+                                              country=&quot;us&quot;, 
+                                              type=&quot;topstories&quot;) %&gt;%
+  slice(1:20)
+
+topstories_meta %&gt;% select(date, title) %&gt;% head() %&gt;% knitr::kable()</code></pre>
+<table>
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">date</th>
+<th align="left">title</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">07 Aug 2020</td>
+<td align="left">Air India plane crashes in Kerala after skidding off the runway - CNN</td>
+</tr>
+<tr class="even">
+<td align="left">07 Aug 2020</td>
+<td align="left">New York Gov. Cuomo says all school districts across state are authorized to reopen - CNBC</td>
+</tr>
+<tr class="odd">
+<td align="left">07 Aug 2020</td>
+<td align="left">No, Trump’s Tencent Order Is Not Going To Ban ‘League of Legends’ And ‘Fortnite’ - Forbes</td>
+</tr>
+<tr class="even">
+<td align="left">07 Aug 2020</td>
+<td align="left">2020 polls tighten: Trump narrows gap with Biden as campaign chief credits coronavirus briefings - Fox News</td>
+</tr>
+<tr class="odd">
+<td align="left">07 Aug 2020</td>
+<td align="left">Lebanon president: Beirut explosion either due to negligence or missile, bomb - USA TODAY</td>
+</tr>
+<tr class="even">
+<td align="left">07 Aug 2020</td>
+<td align="left">In second coronavirus test, Ohio Gov. Mike DeWine now tests negative - cleveland.com</td>
+</tr>
+</tbody>
+</table>
+<pre class="r"><code>topstories_tif &lt;- topstories_meta %&gt;% quicknews::qnews_scrape_web ()</code></pre>
+</div>
+<div id="annotate-text" class="section level2">
+<h2>Annotate text</h2>
+<p>I am not sure if this step is ultimately necessary. Text annotation is such a bog on workflow, and very seldomly gets you anything outside of the world of linguistics-proper.</p>
+<pre class="r"><code>setwd(local)
+udmodel &lt;- udpipe::udpipe_load_model(&#39;english-ewt-ud-2.3-181115.udpipe&#39;)
+topstories &lt;- udpipe::udpipe_annotate(udmodel, 
+                                      x = topstories_tif$text)</code></pre>
+</div>
+<div id="filter-clean" class="section level2">
+<h2>Filter &amp; clean</h2>
+<pre class="r"><code>topstories &lt;- as.data.frame(topstories) %&gt;%
+  mutate(doc_id = as.numeric(gsub(&#39;doc&#39;, &#39;&#39;, doc_id))) %&gt;%
+  group_by(doc_id) %&gt;%
+  mutate(n = length(unique(sentence_id))) %&gt;%
+  filter(n &gt; 20) %&gt;%
+  ungroup()</code></pre>
+</div>
+<div id="build-terminology-set" class="section level2">
+<h2>Build terminology set</h2>
+<pre class="r"><code>terminology &lt;- split(subset(topstories, 
+                            upos %in% c(&quot;NOUN&quot;, &quot;ADJ&quot;)), 
+                     topstories$doc_id)</code></pre>
+</div>
+<div id="extract-sentences-from-annotation-object" class="section level2">
+<h2>Extract sentences from annotation object</h2>
+<pre class="r"><code>sentences &lt;- topstories %&gt;%
+  select(sentence_id, sentence, doc_id) %&gt;%
+  filter(nchar(sentence) &gt; 10) %&gt;%
+  filter(!grepl(&#39;AM|PM|LLC|All Rights Reserved&#39;, sentence)) %&gt;%
+  distinct() %&gt;%
+  mutate(doc_id = as.numeric(gsub(&#39;doc&#39;, &#39;&#39;, doc_id)))
+
+sentences_split &lt;- split(sentences, sentences$doc_id)</code></pre>
+</div>
+<div id="apply-pagerank-algorithm" class="section level2">
+<h2>Apply PageRank algorithm</h2>
+<pre class="r"><code>tr &lt;- lapply(1:length(sentences_split), function(x) { 
+             textrank::textrank_sentences(data = sentences_split[[x]], 
+                                          terminology = terminology[[x]])})
+
+sts &lt;- lapply(tr, function(x) {summary(x, 
+                                       n = 3, 
+                                       keep.sentence.order = TRUE)})
+
+titles &lt;- topstories_tif %&gt;% filter(doc_id %in% unique(sentences$doc_id))
+names(sts) &lt;- titles$title</code></pre>
+</div>
+<div id="summarize-results" class="section level2">
+<h2>Summarize results</h2>
+<pre><code>## $`First on CNN: Warren and other top Democrats ask USPS watchdog to investigate practices - CNN`
+## [1] &quot;Find out what&#39;s happening in the world as it unfolds.&quot;                                                      
+## [2] &quot;US Postmaster General Louis&quot;                                                                                
+## [3] &quot;Dejoy arrives at a meeting at the office of House Speaker Nancy Pelosi at the US Capitol on August 5, 2020.&quot;
+## 
+## $`&#39;Godzilla&#39; was a metaphor for Hiroshima, and Hollywood whitewashed it - NBC News`
+## [1] &quot;By Kimmy Yam&quot;                                                                                                                                           
+## [2] &quot;The fictional creature, a giant dinosaur once undisturbed in the ocean, was depicted in the original film as having been aggravated by a hydrogen bomb.&quot;
+## [3] &quot;American audiences, however, had the opposite reaction, finding comedic value in what many interpreted as a cheesy monster movie.&quot;                      
+## 
+## $`In second coronavirus test, Ohio Gov. Mike DeWine now tests negative - cleveland.com`
+## [1] &quot;The earlier test, administered as DeWine traveled to greet President Donald Trump in Cleveland, delivers fast results by testing for the presence of antigens in the body, but is a relatively unproven technology and is viewed as less accurate .&quot;
+## [2] &quot;“The test administered this morning to the Governor in Cleveland, as part of the protocol required to meet the President, was an antigen test,” the statement continued.&quot;                                                                           
+## [3] &quot;The development caps a tumultuous day in Ohio, and is sure to further complicate the already heated public debate about the coronavirus pandemic, COVID testing accuracy and availability, and the applicability for public policy.&quot;                
+## 
+## $`July jobs report: Here&#39;s what 5 economists are saying - Business Insider - Business Insider`
+## [1] &quot;Employment remains down 12.9 million jobs from its pre-pandemic February level, the report said, meaning that only about 42% of the jobs lost during the crisis have been recovered.&quot;        
+## [2] &quot;Here&#39;s what five economists said about the July jobs report.&quot;                                                                                                                                
+## [3] &quot;A stock chief for $7.3 trillion BlackRock told us how he&#39;s investing to get the best returns — and his top picks for maximum income as Wall Street faces the threat of mass dividend cuts 1.&quot;
+## 
+## $`New York Gov. Cuomo says all school districts across state are authorized to reopen - CNBC`
+## [1] &quot;Key Points New York Gov. Andrew Cuomo announced that all school districts across the state have been authorized to reopen for the fall semester, including New York City.&quot;                  
+## [2] &quot;Cuomo said there are 749 districts that have to submit plans to the New York State Department of Health on how they plan to keep children and staff safe while attending classes in person.&quot;
+## [3] &quot;School districts can choose how they want to conduct classes, he said.&quot;                                                                                                                     
+## 
+## $`POLITICO Playbook PM: How far apart are the Covid relief negotiators? This far. - Politico`
+## [1] &quot;Presented by Facebook Speaker Nancy Pelosi positioned compromising on the topline number as the central question going into today’s meeting. | Samuel Corum/Getty&quot;
+## [2] &quot;Images THE LAST GASP? …&quot;                                                                                                                                          
+## [3] &quot;SPEAKER NANCY PELOSI is hosting Senate Minority Leader CHUCK SCHUMER, White House COS MARK MEADOWS and Treasury Secretary&quot;                                        
+## 
+## $`Lebanon president: Beirut explosion either due to negligence or missile, bomb - USA TODAY`
+## [1] &quot;Lebanon president: Beirut explosion either due to negligence or missile, bomb Staff and wires Lebanese President Michel Aoun said Friday there are two possible causes of Tuesday’s explosion that killed nearly 150 people – either negligence or “external intervention” by a missile or bomb.&quot;
+## [2] &quot;He also rejected the United Nations human rights commission call for an international investigation.&quot;                                                                                                                                                                                            
+## [3] &quot;It&#39;s believed that the blast occurred when a fire ignited 2,750 tons of ammonium nitrate stored at the port.&quot;                                                                                                                                                                                    
+## 
+## $`2020 polls tighten: Trump narrows gap with Biden as campaign chief credits coronavirus briefings - Fox News`
+## [1] &quot;Trump campaign:&quot;                                                   
+## [2] &quot;The president is on the rise in the polls&quot;                         
+## [3] &quot;Is the Trump campaign under pressure to reset before the election?&quot;
+## 
+## $`Biden&#39;s relationship with Obama offers a guide to his running mate search - CNN`
+## [1] &quot;&#39;So shameful&#39;: Chalian reacts to Trump&#39;s comments on John Lewis Washington (CNN) When they left the White House, Barack Obama and Joe Biden were friends and trusted allies, forging a kindred bond after an eight-year partnership.&quot;
+## [2] &quot;\&quot;My family is so proud to call ourselves honorary Bidens,\&quot; Obama said, surprising his vice president by presenting him the Medal of Freedom in the closing days of their second term.&quot;                                             
+## [3] &quot;\&quot;One of the best things of these eight years is that we&#39;re forever bonded as a family.\&quot;&quot;                                                                                                                                           
+## 
+## $`Samsung Galaxy Z Fold 2 shown off in leaked hands-on video - Android Authority`
+## [1] &quot;Credit: Samsung Frequent leaker Ben Geskin just posted a quick hands-on video with the Samsung Galaxy Z Fold 2.&quot;
+## [2] &quot;The device looks great and appears to be a real step-up from the original Galaxy Fold.&quot;                         
+## [3] &quot;The Galaxy Z Fold 2 won’t see a full launch until September.&quot;                                                   
+## 
+## $`US sanctions Hong Kong chief executive Carrie Lam over democratic crackdowns - CNN`
+## [1] &quot;Find out what&#39;s happening in the world as it unfolds.&quot;                                                                                        
+## [2] &quot;Washington (CNN) The US sanctioned Hong Kong Chief Executive Carrie Lam Friday for her role in crackdowns on political freedom in the region.&quot;
+## [3] &quot;Sanctioning Lam is a significant escalation, experts say.&quot;                                                                                    
+## 
+## $`Air India plane crashes in Kerala after skidding off the runway - CNN`
+## [1] &quot;Why masks are the new Italian fashion statement (CNN) An Air India Express plane crashed in the South Indian state of Kerala after skidding off the runway and breaking into two while landing at Kozhikode Calicut International Airport.&quot;
+## [2] &quot;At least 16 people died in the crash, including both pilots, and 46 people are seriously injured, according to CV Anand, Central Industrial Security Force&#39;s Inspector General.&quot;                                                           
+## [3] &quot;The flight, number IX-1344, overshot the runway in rainy conditions, \&quot;went down 35-feet into a slope before breaking up into two pieces,\&quot; Civil Aviation Minister Hardeep Singh Puri told CNN.&quot;                                          
+## 
+## $`Trump exempts Arizona, California, Connecticut from National Guard coronavirus deployment payments - POLITICO`
+## [1] &quot;Coronavirus&quot;                                                                                                                                                                                                                    
+## [2] &quot;Trump temporarily exempts Arizona, California, Connecticut from National Guard coronavirus deployment cuts Earlier this week, the administration announced it would cover the full deployment costs only for Florida and Texas.&quot;
+## [3] &quot;FEMA will now cover the full National Guard costs, which the states were previously ordered to fund themselves. | Rich Pedroncelli/AP&quot;                                                                                          
+## 
+## $`Treasury Issues New FAQs On PPP Loan Forgiveness: What You Need To Know - Forbes`
+## [1] &quot;4 Ways To Fine-Tune Your Messaging To Target Ideal Audience 1.&quot;                                                                                                                                                   
+## [2] &quot;How do I submit my PPP loan forgiveness application?&quot;                                                                                                                                                             
+## [3] &quot;In an effort to facilitate the process for sole proprietors, independent contractors, or self-employed individuals with no employees, the guidance explains you can use SBA Form 3508EZ or the lender equivalent.&quot;</code></pre>
+</div>

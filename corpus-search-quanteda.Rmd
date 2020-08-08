@@ -1,0 +1,61 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+corpus search in context --
+
+via procedure introduced in the new flexdash application --
+
+Using the Twitter sample corpus -- perhaps, or founding fathers -- or both --
+
+
+```{r}
+setwd('/home/jtimm/jt_work/GitHub/twitter_corpus/flexdash-tweet-search/')
+sample_congress_tif <- readRDS('sample_congress_tif.rds')
+```
+
+```{r}
+search <- 'coronavirus( pandemic)?|covid(-)?(19)?'
+
+corpus_tif <- sample_congress_tif 
+qorp <- quanteda::corpus(corpus_tif)
+quanteda::docnames(qorp) <- corpus_tif$status_id
+
+
+## filter texts to those containing search phrase -- 
+qsub1 <- quanteda::corpus_subset(qorp, 
+                                 grepl(search,   
+                                       quanteda::texts(qorp)))
+
+
+splits <- strsplit(search, '\\|')[[1]]
+
+# find search phrase in context -- 
+srs <- lapply(splits, function(x) { 
+    quanteda::kwic(qsub1, 
+                   quanteda::phrase(x), 
+                   valuetype = "regex", 
+                   window = 10)  })
+
+names(srs) <- splits
+results <- srs %>% 
+  data.table::rbindlist() %>%
+  left_join(quanteda::docvars(qorp), 
+            by = c('docname' = 'status_id')) 
+  
+
+## add some color for good measure --
+results1 <- results %>%
+    mutate(context = paste0(pre, 
+                            ' <span style="background-color:#dae2ba">',
+                            keyword,
+                            '</span> ',
+                            post)) %>%
+    select(created_at, docname, keyword, context)
+
+## output -- 
+
+
+```
+

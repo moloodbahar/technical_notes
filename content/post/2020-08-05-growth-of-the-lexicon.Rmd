@@ -1,0 +1,30 @@
+---
+title: growth of the lexicon
+author: ''
+date: '2020-02-20'
+slug: growth-of-the-lexicon
+categories: []
+tags: []
+---
+
+
+## Age-of-acquisition ratings:
+
+
+```{r fig.height=6, message=FALSE, warning=FALSE}
+library(tidyverse)
+lexvarsdatr::lvdr_behav_data %>%
+  filter(!is.na(aoaRating)) %>%
+  arrange(aoaRating) %>%
+  mutate(cum = row_number()) %>%
+  ggplot(aes(x=aoaRating, y=cum)) + 
+  geom_line() +
+  xlab('Age') + ylab('Cumulative lexicon') +
+  labs(title = "Growth of the lexicon")
+```
+
+
+
+## References
+
+Kuperman, V., Stadthagen-Gonzalez, H., & Brysbaert, M. (2012). Age-of-acquisition ratings for 30,000 English words. *Behavior Research Methods*, 44(4), 978-990.

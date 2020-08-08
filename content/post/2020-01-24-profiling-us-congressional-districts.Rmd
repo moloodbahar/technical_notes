@@ -1,0 +1,36 @@
+---
+title: profiling congressional districts
+author: ''
+date: '2020-01-24'
+slug: profiling-us-congressional-districts
+categories: []
+tags: []
+---
+
+Demographically profiling US congressional districts using 1-year estimates (2018) from the American Community Survey (ACS).  Accessed via the `tidycensus` package and collated in the `uspoliticalextras` R package.  Comparing district-level characteristics to probability distributions. 
+
+```{r fig.height=8, message=FALSE, warning=FALSE}
+library(tidyverse)
+base_viz <- uspoliticalextras::uspol_dems2018_house %>% 
+  ggplot( aes(estimate, fill = variable)) +
+  geom_density(alpha = 0.65,
+               color = 'darkgray',
+               adjust = 1) +
+  scale_fill_manual(values = 
+                      colorRampPalette(ggthemes::stata_pal()(8))(12)) +
+  facet_wrap(~variable, scale = 'free')+
+  theme_minimal() +
+  theme(legend.position = "none",
+        axis.text.y=element_blank(),
+        axis.title.x=element_blank(),
+        axis.title.y=element_blank())
+
+ke05 <- uspoliticalextras::uspol_dems2018_house %>% 
+  filter(GEOID %in% c('2105')) 
+
+base_viz + 
+  geom_vline (data = ke05, 
+              aes(xintercept=estimate),
+              linetype = 2) +
+  ggtitle("A demographic profile of Kentucky's 5th District" )
+```

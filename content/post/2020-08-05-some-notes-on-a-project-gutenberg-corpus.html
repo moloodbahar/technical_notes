@@ -1,0 +1,80 @@
+---
+title: some notes on a project gutenberg corpus
+author: ''
+date: '2020-07-02'
+slug: some-notes-on-a-project-gutenberg-corpus
+categories: []
+tags: []
+---
+
+
+
+<p>Project Gutenberg (PG) is an historical-cultural treasure trove. That said, it can be a bit of a mess from a text-as-data perspective. Sized at 56K texts and 3B tokens. Not a walk-around corpus. The goal here, then, is to quickly piece together a reasonably sized sub-corpus to demonstrate some different methodologies. No attempts are made at balancing the corpus, either diachronically or by genre.</p>
+<p>Allison Parrish has done the dirty work of downloading/collating PG texts, and has made them available for download (along with meta data) as a zip file <a href="https://github.com/aparrish/gutenberg-dammit">here</a>. The following work-flow is based on this download.</p>
+<div id="sampling-methods" class="section level2">
+<h2>Sampling methods</h2>
+<pre class="r"><code>setwd(local_raw)
+meta &lt;- jsonlite::fromJSON(readLines(&#39;gutenberg-metadata.json&#39;), 
+                           flatten = TRUE) %&gt;%
+  janitor::clean_names()
+
+meta$n_type &lt;- lengths(meta$lo_c_class)
+meta$n_author &lt;- lengths(meta$author)
+
+meta1 &lt;- meta %&gt;%
+  filter(author_birth != &#39;?&#39; &amp;
+           language == &#39;English&#39; &amp;
+           n_type == 1 &amp; n_author == 1 &amp;
+           charset %in% c(&#39;utf-8&#39;, &#39;us-ascii&#39;)) # n = ~16K; from 50+K
+
+## get word count -- 
+mets &lt;- sapply(meta1$gd_path, function(x) {
+
+  xx &lt;- scan(paste0(local_raw, x), 
+             what = character(), 
+             sep = &#39;\n&#39;, quiet = T)
+  xx1 &lt;- paste0(xx, collapse = &#39; &#39;)
+  tokenizers::count_words(xx1)     })
+
+meta1$word_n &lt;- unlist(mets) ## here, corpus @ ~1B</code></pre>
+</div>
+<div id="word-counts-corpus-composition" class="section level2">
+<h2>Word counts &amp; corpus composition</h2>
+<pre class="r"><code>summary(meta1$word_n)</code></pre>
+<pre><code>##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##       0   18182   45970   60405   82941 2266013</code></pre>
+<pre class="r"><code>meta2 &lt;- meta1 %&gt;%
+  filter(word_n &gt; 5000 &amp; word_n &lt;70000) %&gt;%
+  mutate(author_birth = as.numeric(author_birth),
+         check = ifelse(grepl(&#39;Poetry&#39;, subject), 1, 0)) %&gt;%
+  filter(author_birth &gt; 1770 &amp; author_birth &lt; 1920 &amp;
+           check != 1) </code></pre>
+<pre class="r"><code>list(&#39;ndocs&#39; = nrow(meta2), &#39;ntokens&#39; = sum(meta2$word_n))</code></pre>
+<pre><code>## $ndocs
+## [1] 7026
+## 
+## $ntokens
+## [1] 244054416</code></pre>
+</div>
+<div id="build-corpus" class="section level2">
+<h2>Build corpus</h2>
+<pre class="r"><code>## hard text clean
+txts &lt;- sapply(meta2$gd_path, function(x) {
+
+  a &lt;- scan(paste0(local_raw, x), what = character(), sep = &#39;\n&#39;, quiet = T)
+  b &lt;- paste0(a, collapse = &#39; &#39;)
+  #c &lt;- trimws(b)
+  c &lt;- gsub(&quot;^ *|(?&lt;= ) | *$&quot;, &quot;&quot;, b, perl = TRUE)
+  
+  t1 &lt;- tokenizers::tokenize_ptb(c, lowercase = TRUE)
+  t2 &lt;- lapply(t1, gsub, 
+               pattern = &#39;([a-z0-9])([[:punct:]])&#39;, 
+               replacement = &#39;\\1 \\2&#39;) 
+  t3 &lt;- lapply(t2, gsub, 
+               pattern = &#39;([[:punct:]])([a-z0-9])&#39;, 
+               replacement = &#39;\\1 \\2&#39;) 
+  lapply(t3, paste0, collapse = &#39; &#39;)   })
+  
+setwd(local_out)
+saveRDS (txts, &#39;sample-pg-corpus.rds&#39;)</code></pre>
+</div>

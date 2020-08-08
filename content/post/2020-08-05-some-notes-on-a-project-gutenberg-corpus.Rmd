@@ -1,0 +1,110 @@
+---
+title: some notes on a project gutenberg corpus
+author: ''
+date: '2020-07-02'
+slug: some-notes-on-a-project-gutenberg-corpus
+categories: []
+tags: []
+---
+
+Project Gutenberg (PG) is an historical-cultural treasure trove.  That said, it can be a bit of a mess from a text-as-data perspective. Sized at 56K texts and 3B tokens.  Not a walk-around corpus.  The goal here, then, is to quickly piece together a reasonably sized sub-corpus to demonstrate some different methodologies. No attempts are made at balancing the corpus, either diachronically or by genre.  
+
+Allison Parrish has done the dirty work of downloading/collating PG texts, and has made them available for download (along with meta data) as a zip file [here](https://github.com/aparrish/gutenberg-dammit).  The following work-flow is based on this download.
+
+
+## Sampling methods
+
+```{r include=FALSE}
+local_raw <- '/home/jtimm/Desktop/gutenberg-dammit-files-v002/gutenberg-dammit-files/'
+local_out <- '/home/jtimm/jt_work/GitHub/data_sets/project_gutenberg'
+library(tidyverse)
+```
+
+
+```{r eval=FALSE}
+setwd(local_raw)
+meta <- jsonlite::fromJSON(readLines('gutenberg-metadata.json'), 
+                           flatten = TRUE) %>%
+  janitor::clean_names()
+
+meta$n_type <- lengths(meta$lo_c_class)
+meta$n_author <- lengths(meta$author)
+
+meta1 <- meta %>%
+  filter(author_birth != '?' &
+           language == 'English' &
+           n_type == 1 & n_author == 1 &
+           charset %in% c('utf-8', 'us-ascii')) # n = ~16K; from 50+K
+
+## get word count -- 
+mets <- sapply(meta1$gd_path, function(x) {
+
+  xx <- scan(paste0(local_raw, x), 
+             what = character(), 
+             sep = '\n', quiet = T)
+  xx1 <- paste0(xx, collapse = ' ')
+  tokenizers::count_words(xx1)     })
+
+meta1$word_n <- unlist(mets) ## here, corpus @ ~1B
+```
+ 
+ 
+ 
+ 
+## Word counts & corpus composition
+
+```{r include=FALSE}
+setwd(local_out)
+#saveRDS (meta1, 'meta1.rds')
+meta1 <- readRDS('meta1.rds')
+```
+
+
+```{r}
+summary(meta1$word_n)
+```
+
+
+
+```{r}
+meta2 <- meta1 %>%
+  filter(word_n > 5000 & word_n <70000) %>%
+  mutate(author_birth = as.numeric(author_birth),
+         check = ifelse(grepl('Poetry', subject), 1, 0)) %>%
+  filter(author_birth > 1770 & author_birth < 1920 &
+           check != 1) 
+```
+ 
+ 
+```{r}
+list('ndocs' = nrow(meta2), 'ntokens' = sum(meta2$word_n))
+```
+ 
+ 
+ 
+
+## Build corpus
+
+```{r eval=FALSE}
+## hard text clean
+txts <- sapply(meta2$gd_path, function(x) {
+
+  a <- scan(paste0(local_raw, x), what = character(), sep = '\n', quiet = T)
+  b <- paste0(a, collapse = ' ')
+  #c <- trimws(b)
+  c <- gsub("^ *|(?<= ) | *$", "", b, perl = TRUE)
+  
+  t1 <- tokenizers::tokenize_ptb(c, lowercase = TRUE)
+  t2 <- lapply(t1, gsub, 
+               pattern = '([a-z0-9])([[:punct:]])', 
+               replacement = '\\1 \\2') 
+  t3 <- lapply(t2, gsub, 
+               pattern = '([[:punct:]])([a-z0-9])', 
+               replacement = '\\1 \\2') 
+  lapply(t3, paste0, collapse = ' ')   })
+  
+setwd(local_out)
+saveRDS (txts, 'sample-pg-corpus.rds')
+```
+
+ 

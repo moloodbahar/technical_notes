@@ -1,0 +1,310 @@
+---
+title: front-line house democrats
+author: ''
+date: '2019-12-09'
+slug: front-line-house-democrats
+---
+
+
+
+<blockquote>
+<p>The table below highlights the 30 Democrats in the 116th House representing districts won by DJT in 2016. Full data set available <a href="https://github.com/jaytimm/uspoliticalextras/blob/master/clean-data-sets/thirty-one-house-democrats.csv">here</a>. Methods for building data set available <a href="https://www.jtimm.net/2019/12/13/frontline-democrats/">here</a>.</p>
+</blockquote>
+<p><em>Updated per Jeff Van Drew’s <a href="https://www.rollcall.com/2019/12/14/impeachment-costing-democrats-a-house-member-as-van-drew-plans-party-switch/">party switch</a>.</em></p>
+<pre class="r"><code>library(tidyverse)
+url1 &lt;- &#39;https://raw.githubusercontent.com/jaytimm/uspoliticalextras/master/clean-data-sets/thirty-one-house-democrats.csv&#39;
+fl30 &lt;- read.csv(url(url1)) %&gt;% 
+  rename(dist = district_code, 
+         st = state_abbrev, 
+         rep = house_rep,
+         rep_margin = house_rep_margin, 
+         fr = is_fresh) %&gt;%
+  select(-bioguide_id, -house_flip)
+
+fl30 %&gt;%
+  knitr::kable()</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">st</th>
+<th align="right">dist</th>
+<th align="left">rep</th>
+<th align="left">fr</th>
+<th align="right">rep_margin</th>
+<th align="right">trump_margin</th>
+<th align="left">pres_lineage</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">AZ</td>
+<td align="right">1</td>
+<td align="left">O’HALLERAN, Thomas C.</td>
+<td align="left">N</td>
+<td align="right">-7.7</td>
+<td align="right">1.1</td>
+<td align="left">McCain | Romney | Trump</td>
+</tr>
+<tr class="even">
+<td align="left">GA</td>
+<td align="right">6</td>
+<td align="left">McBATH, Lucy</td>
+<td align="left">Y</td>
+<td align="right">-1.0</td>
+<td align="right">1.5</td>
+<td align="left">McCain | Romney | Trump</td>
+</tr>
+<tr class="odd">
+<td align="left">IL</td>
+<td align="right">14</td>
+<td align="left">UNDERWOOD, Lauren</td>
+<td align="left">Y</td>
+<td align="right">-5.0</td>
+<td align="right">3.9</td>
+<td align="left">Obama | Romney | Trump</td>
+</tr>
+<tr class="even">
+<td align="left">IL</td>
+<td align="right">17</td>
+<td align="left">BUSTOS, Cheri</td>
+<td align="left">N</td>
+<td align="right">-24.2</td>
+<td align="right">0.7</td>
+<td align="left">Obama | Obama | Trump</td>
+</tr>
+<tr class="odd">
+<td align="left">IA</td>
+<td align="right">1</td>
+<td align="left">FINKENAUER, Abby</td>
+<td align="left">Y</td>
+<td align="right">-5.1</td>
+<td align="right">3.5</td>
+<td align="left">Obama | Obama | Trump</td>
+</tr>
+<tr class="even">
+<td align="left">IA</td>
+<td align="right">2</td>
+<td align="left">LOEBSACK, Dave</td>
+<td align="left">N</td>
+<td align="right">-12.2</td>
+<td align="right">4.1</td>
+<td align="left">Obama | Obama | Trump</td>
+</tr>
+<tr class="odd">
+<td align="left">IA</td>
+<td align="right">3</td>
+<td align="left">AXNE, Cynthia</td>
+<td align="left">Y</td>
+<td align="right">-2.2</td>
+<td align="right">3.5</td>
+<td align="left">Obama | Obama | Trump</td>
+</tr>
+<tr class="even">
+<td align="left">ME</td>
+<td align="right">2</td>
+<td align="left">GOLDEN, Jared</td>
+<td align="left">Y</td>
+<td align="right">-1.2</td>
+<td align="right">10.3</td>
+<td align="left">Obama | Obama | Trump</td>
+</tr>
+<tr class="odd">
+<td align="left">MI</td>
+<td align="right">8</td>
+<td align="left">SLOTKIN, Elissa</td>
+<td align="left">Y</td>
+<td align="right">-3.8</td>
+<td align="right">6.7</td>
+<td align="left">Obama | Romney | Trump</td>
+</tr>
+<tr class="even">
+<td align="left">MI</td>
+<td align="right">11</td>
+<td align="left">STEVENS, Haley</td>
+<td align="left">Y</td>
+<td align="right">-6.7</td>
+<td align="right">4.4</td>
+<td align="left">Obama | Romney | Trump</td>
+</tr>
+<tr class="odd">
+<td align="left">MN</td>
+<td align="right">2</td>
+<td align="left">CRAIG, Angela</td>
+<td align="left">Y</td>
+<td align="right">-5.5</td>
+<td align="right">1.2</td>
+<td align="left">Obama | Obama | Trump</td>
+</tr>
+<tr class="even">
+<td align="left">MN</td>
+<td align="right">7</td>
+<td align="left">PETERSON, Collin Clark</td>
+<td align="left">N</td>
+<td align="right">-4.3</td>
+<td align="right">30.8</td>
+<td align="left">McCain | Romney | Trump</td>
+</tr>
+<tr class="odd">
+<td align="left">NV</td>
+<td align="right">3</td>
+<td align="left">LEE, Susie</td>
+<td align="left">Y</td>
+<td align="right">-9.1</td>
+<td align="right">1.0</td>
+<td align="left">Obama | Obama | Trump</td>
+</tr>
+<tr class="even">
+<td align="left">NH</td>
+<td align="right">1</td>
+<td align="left">PAPPAS, Chris</td>
+<td align="left">Y</td>
+<td align="right">-8.6</td>
+<td align="right">1.6</td>
+<td align="left">Obama | Obama | Trump</td>
+</tr>
+<tr class="odd">
+<td align="left">NJ</td>
+<td align="right">3</td>
+<td align="left">KIM, Andy</td>
+<td align="left">Y</td>
+<td align="right">-1.3</td>
+<td align="right">6.2</td>
+<td align="left">Obama | Obama | Trump</td>
+</tr>
+<tr class="even">
+<td align="left">NJ</td>
+<td align="right">5</td>
+<td align="left">GOTTHEIMER, Josh S.</td>
+<td align="left">N</td>
+<td align="right">-13.7</td>
+<td align="right">1.1</td>
+<td align="left">McCain | Romney | Trump</td>
+</tr>
+<tr class="odd">
+<td align="left">NJ</td>
+<td align="right">11</td>
+<td align="left">SHERRILL, Mikie</td>
+<td align="left">Y</td>
+<td align="right">-14.6</td>
+<td align="right">0.9</td>
+<td align="left">McCain | Romney | Trump</td>
+</tr>
+<tr class="even">
+<td align="left">NM</td>
+<td align="right">2</td>
+<td align="left">TORRES SMALL, Xochitl</td>
+<td align="left">Y</td>
+<td align="right">-1.9</td>
+<td align="right">10.2</td>
+<td align="left">McCain | Romney | Trump</td>
+</tr>
+<tr class="odd">
+<td align="left">NY</td>
+<td align="right">11</td>
+<td align="left">ROSE, Max</td>
+<td align="left">Y</td>
+<td align="right">-6.5</td>
+<td align="right">9.8</td>
+<td align="left">McCain | Obama | Trump</td>
+</tr>
+<tr class="even">
+<td align="left">NY</td>
+<td align="right">18</td>
+<td align="left">MALONEY, Sean Patrick</td>
+<td align="left">N</td>
+<td align="right">-10.9</td>
+<td align="right">1.9</td>
+<td align="left">Obama | Obama | Trump</td>
+</tr>
+<tr class="odd">
+<td align="left">NY</td>
+<td align="right">19</td>
+<td align="left">DELGADO, Antonio</td>
+<td align="left">Y</td>
+<td align="right">-5.2</td>
+<td align="right">6.8</td>
+<td align="left">Obama | Obama | Trump</td>
+</tr>
+<tr class="even">
+<td align="left">NY</td>
+<td align="right">22</td>
+<td align="left">BRINDISI, Anthony</td>
+<td align="left">Y</td>
+<td align="right">-1.8</td>
+<td align="right">15.5</td>
+<td align="left">McCain | Romney | Trump</td>
+</tr>
+<tr class="odd">
+<td align="left">OK</td>
+<td align="right">5</td>
+<td align="left">HORN, Kendra</td>
+<td align="left">Y</td>
+<td align="right">-1.4</td>
+<td align="right">13.4</td>
+<td align="left">McCain | Romney | Trump</td>
+</tr>
+<tr class="even">
+<td align="left">PA</td>
+<td align="right">8</td>
+<td align="left">CARTWRIGHT, Matt</td>
+<td align="left">N</td>
+<td align="right">-9.3</td>
+<td align="right">0.2</td>
+<td align="left">Obama | Romney | Trump</td>
+</tr>
+<tr class="odd">
+<td align="left">PA</td>
+<td align="right">17</td>
+<td align="left">LAMB, Conor</td>
+<td align="left">N</td>
+<td align="right">-12.5</td>
+<td align="right">10.1</td>
+<td align="left">Obama | Obama | Trump</td>
+</tr>
+<tr class="even">
+<td align="left">SC</td>
+<td align="right">1</td>
+<td align="left">CUNNINGHAM, Joe</td>
+<td align="left">Y</td>
+<td align="right">-1.4</td>
+<td align="right">13.1</td>
+<td align="left">McCain | Romney | Trump</td>
+</tr>
+<tr class="odd">
+<td align="left">UT</td>
+<td align="right">4</td>
+<td align="left">McADAMS, Ben</td>
+<td align="left">Y</td>
+<td align="right">-0.3</td>
+<td align="right">6.7</td>
+<td align="left">McCain | Romney | Trump</td>
+</tr>
+<tr class="even">
+<td align="left">VA</td>
+<td align="right">2</td>
+<td align="left">LURIA, Elaine</td>
+<td align="left">Y</td>
+<td align="right">-2.2</td>
+<td align="right">3.4</td>
+<td align="left">McCain | Romney | Trump</td>
+</tr>
+<tr class="odd">
+<td align="left">VA</td>
+<td align="right">7</td>
+<td align="left">SPANBERGER, Abigail</td>
+<td align="left">Y</td>
+<td align="right">-1.9</td>
+<td align="right">6.5</td>
+<td align="left">McCain | Romney | Trump</td>
+</tr>
+<tr class="even">
+<td align="left">WI</td>
+<td align="right">3</td>
+<td align="left">KIND, Ron</td>
+<td align="left">N</td>
+<td align="right">-19.3</td>
+<td align="right">4.5</td>
+<td align="left">Obama | Obama | Trump</td>
+</tr>
+</tbody>
+</table>

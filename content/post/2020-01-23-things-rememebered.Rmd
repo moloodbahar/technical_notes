@@ -1,0 +1,51 @@
+---
+title: things rememebered
+author: ''
+date: '2020-01-23'
+slug: things-rememebered
+categories: []
+tags: []
+---
+
+Via a sample of sentences extracted at random from the full Gutenberg Corpus.  Sampled again here for sentences beginning with `I remember`. 
+
+```{r include=FALSE}
+local_gutenberg_sample <- '/home/jtimm/jt_work/GitHub/data_sets/project_gutenberg'
+```
+
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+setwd(local_gutenberg_sample)
+gut_samp_sent <- readRDS ('gutenberg_sample_sentences.RDS')
+meta <- jsonlite::fromJSON(readLines('gutenberg-metadata.json'), 
+                           flatten = FALSE) %>%
+  filter(Language == 'English' &
+           nchar(`Author Birth`) == 4 & 
+           !`Author Birth` %in% c('?', 'NULL', 'NA')) %>%
+  mutate(`Author Birth` = unlist(`Author Birth`))
+    
+set.seed(99)
+gut_samp_sent %>%
+  filter(grepl('^I remember ', text)) %>%
+  filter(!grepl('[A-Z][a-z]\\.$', text)) %>%
+  inner_join(meta %>% rename(doc_id = `gd-path`)) %>%
+  sample_n(75) %>%
+  arrange(`Author Birth`) %>%
+  #mutate(n = row_number(`Author Birth`)) %>%
+  rename(AD = `Author Birth`) %>%
+  select(`AD`, text) %>%
+  knitr::kable(align = c('c', 'l'))
+```
+
+
+
+```{r eval=FALSE, include=FALSE}
+setwd('/home/jtimm/Desktop')
+require(rmarkdown)
+my_text <- y$text
+cat(my_text, sep="  \n", file = "my_text.Rmd")
+render("my_text.Rmd", pdf_document())
+file.remove("my_text.Rmd") #cleanup
+```
+

@@ -1,0 +1,14 @@
+theme = "onetwothree"
+baseURL = "https://puremoe.net/"
+languageCode = "en-us"
+title = "technical notes"
+
+
+[params]
+    twitter = "DrJayTimm"
+    navigation = ["about.md"]
+    #style = "2"
+    avatar = "css/images/avatar.png"
+    
+    
+ ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]

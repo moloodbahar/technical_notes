@@ -1,0 +1,401 @@
+---
+title: class II senators
+author: ''
+date: '2020-01-20'
+slug: class-II-senators
+categories: []
+tags: 
+  - rstats
+  - open-government
+  - New-Mexico
+---
+
+
+
+<p>A quick investigation/roll call of Class II Senators (n = 33) up for re-election in November. <em>Plus special elections for two Class III seats</em>. Via the <code>uspoliticalextras</code> R package.</p>
+<pre class="r"><code>library(tidyverse)
+sens &lt;- uspoliticalextras::uspol_csusa_senate_bios %&gt;%
+  mutate(class = ifelse(last_name %in% c(&#39;McSally&#39;, &#39;Isakson&#39;), 
+                        &#39;II&#39;, class)) %&gt;%
+  filter(congress == 116)
+
+sens %&gt;%  
+  filter(class == &#39;II&#39;) %&gt;%
+  group_by(party) %&gt;%
+  count() %&gt;%
+  knitr::kable()</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">party</th>
+<th align="right">n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">democrat</td>
+<td align="right">12</td>
+</tr>
+<tr class="even">
+<td align="left">republican</td>
+<td align="right">23</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<pre class="r"><code>sens &lt;- sens %&gt;%
+  #filter(class == &#39;II&#39;)    %&gt;%
+  mutate(sen = paste0(last_name, &#39;-&#39;, 
+                      #toupper(substr(party, 1, 1)), 
+                      #&#39;-&#39;, 
+                      state_abbrev))
+
+sens %&gt;% filter(party == &#39;democrat&#39; &amp; class == &#39;II&#39;) %&gt;% 
+  summarize(DEMOCRATS = paste0(sen, collapse = &#39; | &#39;)) %&gt;%
+  knitr::kable()</code></pre>
+<table>
+<colgroup>
+<col width="100%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">DEMOCRATS</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Jones-AL | Coons-DE | Durbin-IL | Markey-MA | Peters-MI | Smith-MN | Shaheen-NH | Booker-NJ | Udall-NM | Merkley-OR | Reed-RI | Warner-VA</td>
+</tr>
+</tbody>
+</table>
+<pre class="r"><code>sens %&gt;% filter(party == &#39;republican&#39; &amp; class == &#39;II&#39;) %&gt;% 
+  summarize(REPUBLICANS = paste0(sen, collapse = &#39; | &#39;)) %&gt;%
+  knitr::kable()</code></pre>
+<table>
+<colgroup>
+<col width="100%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">REPUBLICANS</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Sullivan-AK | McSally-AZ | Cotton-AR | Gardner-CO | Perdue-GA | Isakson-GA | Risch-ID | Ernst-IA | Roberts-KS | McConnell-KY | Cassidy-LA | Collins-ME | Hyde-Smith-MS | Daines-MT | Sasse-NE | Tillis-NC | Inhofe-OK | Graham-SC | Rounds-SD | Alexander-TN | Cornyn-TX | Capito-WV | Enzi-WY</td>
+</tr>
+</tbody>
+</table>
+<div id="by-party-affiliation-state" class="section level2">
+<h2>By party affiliation &amp; state</h2>
+<pre class="r"><code>library(sf)
+pal &lt;- c(&#39;#395f81&#39;, &#39;gray&#39;, &#39;#9e5055&#39;)
+names(pal) &lt;- c(&#39;II-Dem&#39;, &#39;I/III&#39;, &#39;II-Rep&#39;)
+
+maps &lt;- uspoliticalextras::uspol_dkos_equalarea_sf$tile_outer %&gt;% 
+  left_join(sens %&gt;% 
+              mutate(class1 = case_when(class == &#39;II&#39; &amp; party == &#39;democrat&#39; ~ &#39;II-Dem&#39;,
+                                        class == &#39;II&#39; &amp; party == &#39;republican&#39; ~ &#39;II-Rep&#39;,
+                                        class != &#39;II&#39; ~ &#39;I/III&#39;)))  
+
+maps %&gt;%  
+  ggplot() + 
+  geom_sf(aes(fill = class1),
+          color = &#39;black&#39;, 
+          alpha = .85) + 
+  ggsflabel::geom_sf_text(data = uspoliticalextras::uspol_dkos_equalarea_sf$tile_inner,
+                          aes(label = state_abbrev), 
+                          size = 3,
+                          color = &#39;white&#39;) +
+  scale_fill_manual(values = pal) +
+  theme_minimal() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        legend.title=element_blank(),
+        legend.position = &#39;bottom&#39;) +
+  labs(title = &quot;States by Party Affiliation&quot;)</code></pre>
+<p><img src="/post/2020-08-05-us-senators-up-for-re-election-in-2020_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+</div>
+<div id="trump-margins" class="section level2">
+<h2>2016 Trump margins</h2>
+<div id="shaky-democrats" class="section level3">
+<h3>Shaky Democrats</h3>
+<pre class="r"><code>margs &lt;- uspoliticalextras::uspol_medsl_returns_pres_state %&gt;%
+  filter(year == 2016) %&gt;%
+  inner_join(sf::st_drop_geometry(maps) %&gt;%
+               select(state, first_name, last_name, class, party) %&gt;% 
+               filter(class == &#39;II&#39;), by = &#39;state&#39;) %&gt;%
+  mutate(trump_margins = round(republican -democrat, 1),
+         name = paste0(last_name, &#39;, &#39;, first_name)) %&gt;%
+  select(state_po, name, party.y, trump_margins) 
+
+margs %&gt;%
+  filter(party.y == &#39;democrat&#39; &amp; trump_margins &gt; -10) %&gt;%
+  knitr::kable()</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">state_po</th>
+<th align="left">name</th>
+<th align="left">party.y</th>
+<th align="right">trump_margins</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">AL</td>
+<td align="left">Jones, Gordon</td>
+<td align="left">democrat</td>
+<td align="right">27.7</td>
+</tr>
+<tr class="even">
+<td align="left">MI</td>
+<td align="left">Peters, Gary</td>
+<td align="left">democrat</td>
+<td align="right">0.2</td>
+</tr>
+<tr class="odd">
+<td align="left">MN</td>
+<td align="left">Smith, Tina</td>
+<td align="left">democrat</td>
+<td align="right">-1.5</td>
+</tr>
+<tr class="even">
+<td align="left">NH</td>
+<td align="left">Shaheen, Jeanne</td>
+<td align="left">democrat</td>
+<td align="right">-0.4</td>
+</tr>
+<tr class="odd">
+<td align="left">NM</td>
+<td align="left">Udall, Tom</td>
+<td align="left">democrat</td>
+<td align="right">-8.2</td>
+</tr>
+<tr class="even">
+<td align="left">VA</td>
+<td align="left">Warner, Mark</td>
+<td align="left">democrat</td>
+<td align="right">-5.3</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="shaky-republicans" class="section level3">
+<h3>Shaky Republicans</h3>
+<pre class="r"><code>margs %&gt;%
+  filter(party.y == &#39;republican&#39; &amp; trump_margins &lt; 10) %&gt;%
+  knitr::kable()</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">state_po</th>
+<th align="left">name</th>
+<th align="left">party.y</th>
+<th align="right">trump_margins</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">AZ</td>
+<td align="left">McSally, Martha</td>
+<td align="left">republican</td>
+<td align="right">3.5</td>
+</tr>
+<tr class="even">
+<td align="left">CO</td>
+<td align="left">Gardner, Cory</td>
+<td align="left">republican</td>
+<td align="right">-4.9</td>
+</tr>
+<tr class="odd">
+<td align="left">GA</td>
+<td align="left">Perdue, David</td>
+<td align="left">republican</td>
+<td align="right">5.1</td>
+</tr>
+<tr class="even">
+<td align="left">GA</td>
+<td align="left">Isakson, Johnny</td>
+<td align="left">republican</td>
+<td align="right">5.1</td>
+</tr>
+<tr class="odd">
+<td align="left">IA</td>
+<td align="left">Ernst, Joni</td>
+<td align="left">republican</td>
+<td align="right">9.4</td>
+</tr>
+<tr class="even">
+<td align="left">ME</td>
+<td align="left">Collins, Susan</td>
+<td align="left">republican</td>
+<td align="right">-2.9</td>
+</tr>
+<tr class="odd">
+<td align="left">NC</td>
+<td align="left">Tillis, Thom</td>
+<td align="left">republican</td>
+<td align="right">3.7</td>
+</tr>
+<tr class="even">
+<td align="left">TX</td>
+<td align="left">Cornyn, John</td>
+<td align="left">republican</td>
+<td align="right">9.0</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="safeless-shaky-seats" class="section level3">
+<h3>Safe/less shaky seats</h3>
+<pre class="r"><code>margs %&gt;%
+  filter(!(party.y == &#39;republican&#39; &amp; trump_margins &lt; 10) &amp;
+           !(party.y == &#39;democrat&#39; &amp; trump_margins &gt; -10) ) %&gt;%
+  knitr::kable() %&gt;%
+  kableExtra::kable_styling(full_width = T)</code></pre>
+<pre><code>## Warning in kableExtra::kable_styling(., full_width = T): Please specify format
+## in kable. kableExtra can customize either HTML or LaTeX outputs. See https://
+## haozhu233.github.io/kableExtra/ for details.</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">state_po</th>
+<th align="left">name</th>
+<th align="left">party.y</th>
+<th align="right">trump_margins</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">AK</td>
+<td align="left">Sullivan, Daniel</td>
+<td align="left">republican</td>
+<td align="right">14.7</td>
+</tr>
+<tr class="even">
+<td align="left">AR</td>
+<td align="left">Cotton, Tom</td>
+<td align="left">republican</td>
+<td align="right">26.9</td>
+</tr>
+<tr class="odd">
+<td align="left">DE</td>
+<td align="left">Coons, Christopher</td>
+<td align="left">democrat</td>
+<td align="right">-11.4</td>
+</tr>
+<tr class="even">
+<td align="left">ID</td>
+<td align="left">Risch, James</td>
+<td align="left">republican</td>
+<td align="right">31.8</td>
+</tr>
+<tr class="odd">
+<td align="left">IL</td>
+<td align="left">Durbin, Richard</td>
+<td align="left">democrat</td>
+<td align="right">-17.1</td>
+</tr>
+<tr class="even">
+<td align="left">KS</td>
+<td align="left">Roberts, Pat</td>
+<td align="left">republican</td>
+<td align="right">20.6</td>
+</tr>
+<tr class="odd">
+<td align="left">KY</td>
+<td align="left">McConnell, Mitch</td>
+<td align="left">republican</td>
+<td align="right">29.8</td>
+</tr>
+<tr class="even">
+<td align="left">LA</td>
+<td align="left">Cassidy, Bill</td>
+<td align="left">republican</td>
+<td align="right">19.6</td>
+</tr>
+<tr class="odd">
+<td align="left">MA</td>
+<td align="left">Markey, Edward</td>
+<td align="left">democrat</td>
+<td align="right">-26.8</td>
+</tr>
+<tr class="even">
+<td align="left">MS</td>
+<td align="left">Hyde-Smith, Cindy</td>
+<td align="left">republican</td>
+<td align="right">17.8</td>
+</tr>
+<tr class="odd">
+<td align="left">MT</td>
+<td align="left">Daines, Steve</td>
+<td align="left">republican</td>
+<td align="right">20.5</td>
+</tr>
+<tr class="even">
+<td align="left">NE</td>
+<td align="left">Sasse, Ben</td>
+<td align="left">republican</td>
+<td align="right">25.0</td>
+</tr>
+<tr class="odd">
+<td align="left">NJ</td>
+<td align="left">Booker, Cory</td>
+<td align="left">democrat</td>
+<td align="right">-14.1</td>
+</tr>
+<tr class="even">
+<td align="left">OK</td>
+<td align="left">Inhofe, James</td>
+<td align="left">republican</td>
+<td align="right">36.4</td>
+</tr>
+<tr class="odd">
+<td align="left">OR</td>
+<td align="left">Merkley, Jeff</td>
+<td align="left">democrat</td>
+<td align="right">-11.0</td>
+</tr>
+<tr class="even">
+<td align="left">RI</td>
+<td align="left">Reed, Jack</td>
+<td align="left">democrat</td>
+<td align="right">-15.5</td>
+</tr>
+<tr class="odd">
+<td align="left">SC</td>
+<td align="left">Graham, Lindsey</td>
+<td align="left">republican</td>
+<td align="right">14.3</td>
+</tr>
+<tr class="even">
+<td align="left">SD</td>
+<td align="left">Rounds, Mike</td>
+<td align="left">republican</td>
+<td align="right">29.8</td>
+</tr>
+<tr class="odd">
+<td align="left">TN</td>
+<td align="left">Alexander, Lamar</td>
+<td align="left">republican</td>
+<td align="right">26.0</td>
+</tr>
+<tr class="even">
+<td align="left">WV</td>
+<td align="left">Capito, Shelley</td>
+<td align="left">republican</td>
+<td align="right">42.1</td>
+</tr>
+<tr class="odd">
+<td align="left">WY</td>
+<td align="left">Enzi, Michael</td>
+<td align="left">republican</td>
+<td align="right">45.8</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>

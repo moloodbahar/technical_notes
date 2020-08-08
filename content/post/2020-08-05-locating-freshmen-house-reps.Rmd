@@ -1,0 +1,86 @@
+---
+title: locating freshmen house reps
+author: ''
+date: '2020-01-26'
+slug: locating-freshmen-house-reps
+categories: []
+tags: []
+---
+
+
+## Identify freshman via `Rvoteview`
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+at_large <- c('AK', 'DE', 'MT', 'ND', 'SD', 'VT', 'WY')
+
+house_freshies <- Rvoteview:: member_search(chamber= 'House', congress = 116) %>%
+  mutate(freshman = ifelse(congresses == 'c(116, 116)' & 
+                             party_name != 'Independent', 
+                           'Freshman', 
+                           'Not'),
+         district_code = ifelse(state_abbrev %in% at_large, 
+                                0, 
+                                district_code),
+         label = ifelse(freshman == 'Freshman',
+                        paste0(freshman, '-', party_name),
+                        'Not freshman')) %>%
+  select(state_abbrev, district_code, label)
+```
+
+
+
+## Mapping equal-area districts
+
+```{r fig.height=6.5, message=FALSE, warning=FALSE}
+pal <- c('#395f81', 'gray', '#9e5055')
+names(pal) <- c('Freshman-Democratic Party', 
+                'Not freshman', 
+                'Freshman-Republican Party')
+
+library(sf)
+uspoliticalextras::uspol_dkos_equalarea_sf$hex_cds %>%
+  left_join(house_freshies) %>%
+  ggplot() + 
+  geom_sf(aes(fill = label),
+          color = 'white') +
+  geom_sf(data=uspoliticalextras::uspol_dkos_equalarea_sf$hex_states, 
+          fill = NA, 
+          show.legend = F, 
+          color="#5a5c5b", 
+          lwd=.5) +
+  ggsflabel::geom_sf_text(data = uspoliticalextras::uspol_dkos_equalarea_sf$hex_cds,
+                          aes(label = district_code), 
+                          size = 2,
+                          color='black') +
+  theme_minimal()+
+  scale_fill_manual(values = pal) +
+  theme(axis.text.x=element_blank(),
+        axis.text.y=element_blank(),
+        axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        legend.position = 'bottom') +
+  labs(title = 'Freshman House Representatives by party',
+       subtitle = '116th House')
+```
+
+
+
+
+
+```{r eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+nonx <- c('78', '69', '66', '72', '60', '15', '02')
+
+library(tigris); options(tigris_use_cache = TRUE, tigris_class = "sf")
+us_house_districts <- tigris::congressional_districts(cb = TRUE) %>%
+  select(GEOID,STATEFP, CD115FP) %>%
+  
+  left_join(tigris::states(cb = TRUE) %>% 
+              data.frame() %>%
+              select(STATEFP, STUSPS)) 
+
+laea <- sf::st_crs("+proj=laea +lat_0=30 +lon_0=-95") # Lambert equal area
+us_house_districts <- sf::st_transform(us_house_districts, laea)
+```
+
+
