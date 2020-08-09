@@ -4,7 +4,7 @@ baseURL = "https://www.puremoe.net/"
 languageCode = "en-us"
 title = "technical notes"
 theme = "hugo-theme-one"
-googleAnalytics = "UA-123-45"
+googleAnalytics = "UA-174991735-1"
 
 # Chroma Syntax Highlighting
 pygmentsCodefences = true
