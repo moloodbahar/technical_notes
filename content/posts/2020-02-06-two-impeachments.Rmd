@@ -1,0 +1,79 @@
+---
+title: two impeachments
+date: '2020-02-06'
+slug: two-impeachments
+---
+
+
+Fifteen US Senators served in the impeachment trials of both President Clinton in 1999 and President Trump in 2020.  Here we take a quick look at how they voted using the `Rvoteview` package.  
+
+The table below summarizes impeachment roll calls for the two 1999 articles & the two 2020 articles.  There was also a resolution to censure President Clinton.  (Note that Mitt Romney (UT) voted in support of Article I and against Article II in the 2020 impeachment trial of President Trump.) 
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+
+res <- Rvoteview::voteview_search("impeachment") %>%
+  filter(chamber == 'Senate' & 
+           date %in% c('2020-02-05', '1999-02-12')) %>%
+  select(id, date, bill_number, text, question, yea, nay) %>%
+  arrange(date) 
+```
+
+```{r}
+res %>%
+  select(-id) %>%
+  mutate(article = c('-', 'I', 'II', 'II', 'I')) %>%
+  arrange(date, article)%>% 
+  knitr::kable()
+```
+
+
+
+
+Here we look at how the 15 US Senators -- members of both the 106th & 116th congresses -- voted on Article I from the 2020 trial and Article II of the 1999 trial.  
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+votes <- Rvoteview::voteview_download(res$id)
+```
+
+
+```{r eval=FALSE}
+votes <- Rvoteview::voteview_download(res$id)
+```
+
+
+```{r message=FALSE, warning=FALSE}
+sens <- Rvoteview:: member_search(chamber= 'Senate', 
+                                  congress = c(106, 116))         
+
+vs <- votes$votes.long %>% 
+  inner_join(sens %>% 
+               mutate(icpsr = as.character(icpsr))) %>%
+  filter(vname %in% c('RS1060018', 'RS1160461')) %>%
+  select(bioname, state_abbrev, 
+         congress, party_name, vote) %>%
+  mutate(vote = ifelse(vote == 1, 'Yea', 'Nay')) %>%
+  spread(congress, vote) %>%
+  filter(complete.cases(.)) %>%
+  arrange(party_name, `106`) 
+
+vs %>%
+  knitr::kable()
+```
+
+
+
+
+So, seven senators voted both to **impeach President Clinton** and **acquit President Trump**.  Republicans all.
+
+
+```{r}
+vs1 <- vs %>% 
+  filter(`106` ==  'Yea' & `116` == 'Nay') %>%
+  mutate(bioname = gsub(',.*$', '', bioname),
+         bioname = paste0(bioname,' (', state_abbrev, ')'))
+vs1$bioname
+```
+
+
+

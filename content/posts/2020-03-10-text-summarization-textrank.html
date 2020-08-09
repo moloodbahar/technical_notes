@@ -1,0 +1,171 @@
+---
+title: text summarization & textrank
+date: '2020-03-10'
+slug: text-summarization-textrank
+---
+
+
+
+<div id="grab-some-articles-from-googlenews" class="section level2">
+<h2>Grab some articles from GoogleNews</h2>
+<pre class="r"><code>library(tidyverse)
+topstories_meta &lt;- quicknews::qnews_get_meta (language=&quot;en&quot;,
+                                              country=&quot;us&quot;, 
+                                              type=&quot;topstories&quot;) %&gt;%
+  slice(1:20)
+
+topstories_meta %&gt;% select(date, title) %&gt;% head() %&gt;% knitr::kable()</code></pre>
+<table>
+<colgroup>
+<col width="9%" />
+<col width="90%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">date</th>
+<th align="left">title</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">09 Aug 2020</td>
+<td align="left">Could You Get A Second Stimulus Check By Executive Order? - Forbes</td>
+</tr>
+<tr class="even">
+<td align="left">08 Aug 2020</td>
+<td align="left">TikTok To Sue Trump Administration On President’s Executive Order Ban - NPR</td>
+</tr>
+<tr class="odd">
+<td align="left">09 Aug 2020</td>
+<td align="left">World leaders gather by video to pledge aid to Beirut, a day after violent protests rock the city - CNN</td>
+</tr>
+<tr class="even">
+<td align="left">09 Aug 2020</td>
+<td align="left">It’s decision time for Joe Biden. His VP pick could make history, with Harris, Rice among top contenders - USA TODAY</td>
+</tr>
+<tr class="odd">
+<td align="left">08 Aug 2020</td>
+<td align="left">The Voting Will End Nov. 3. The Legal Battle Probably Won’t. - The New York Times</td>
+</tr>
+<tr class="even">
+<td align="left">08 Aug 2020</td>
+<td align="left">Next Year’s Social Security Raise Will Probably Be Meager, at Best - The Motley Fool</td>
+</tr>
+</tbody>
+</table>
+<pre class="r"><code>topstories_tif &lt;- topstories_meta %&gt;% quicknews::qnews_scrape_web ()</code></pre>
+</div>
+<div id="annotate-text" class="section level2">
+<h2>Annotate text</h2>
+<p>I am not sure if this step is ultimately necessary. Text annotation is such a bog on workflow, and very seldomly gets you anything outside of the world of linguistics-proper.</p>
+<pre class="r"><code>setwd(local)
+udmodel &lt;- udpipe::udpipe_load_model(&#39;english-ewt-ud-2.3-181115.udpipe&#39;)
+topstories &lt;- udpipe::udpipe_annotate(udmodel, 
+                                      x = topstories_tif$text)</code></pre>
+</div>
+<div id="filter-clean" class="section level2">
+<h2>Filter &amp; clean</h2>
+<pre class="r"><code>topstories &lt;- as.data.frame(topstories) %&gt;%
+  mutate(doc_id = as.numeric(gsub(&#39;doc&#39;, &#39;&#39;, doc_id))) %&gt;%
+  group_by(doc_id) %&gt;%
+  mutate(n = length(unique(sentence_id))) %&gt;%
+  filter(n &gt; 20) %&gt;%
+  ungroup()</code></pre>
+</div>
+<div id="build-terminology-set" class="section level2">
+<h2>Build terminology set</h2>
+<pre class="r"><code>terminology &lt;- split(subset(topstories, 
+                            upos %in% c(&quot;NOUN&quot;, &quot;ADJ&quot;)), 
+                     topstories$doc_id)</code></pre>
+</div>
+<div id="extract-sentences-from-annotation-object" class="section level2">
+<h2>Extract sentences from annotation object</h2>
+<pre class="r"><code>sentences &lt;- topstories %&gt;%
+  select(sentence_id, sentence, doc_id) %&gt;%
+  filter(nchar(sentence) &gt; 10) %&gt;%
+  filter(!grepl(&#39;AM|PM|LLC|All Rights Reserved&#39;, sentence)) %&gt;%
+  distinct() %&gt;%
+  mutate(doc_id = as.numeric(gsub(&#39;doc&#39;, &#39;&#39;, doc_id)))
+
+sentences_split &lt;- split(sentences, sentences$doc_id)</code></pre>
+</div>
+<div id="apply-pagerank-algorithm" class="section level2">
+<h2>Apply PageRank algorithm</h2>
+<pre class="r"><code>tr &lt;- lapply(1:length(sentences_split), function(x) { 
+             textrank::textrank_sentences(data = sentences_split[[x]], 
+                                          terminology = terminology[[x]])})
+
+sts &lt;- lapply(tr, function(x) {summary(x, 
+                                       n = 3, 
+                                       keep.sentence.order = TRUE)})
+
+titles &lt;- topstories_tif %&gt;% filter(doc_id %in% unique(sentences$doc_id))
+names(sts) &lt;- titles$title</code></pre>
+</div>
+<div id="summarize-results" class="section level2">
+<h2>Summarize results</h2>
+<pre><code>## $`Could You Get A Second Stimulus Check By Executive Order? - Forbes`
+## [1] &quot;Trump Signs Executive Orders:&quot;                                                                   
+## [2] &quot;At $300 Per Week, Protects Against Evictions, Defers Student Loan Payments, Suspends Payroll Tax&quot;
+## [3] &quot;They are more like official instructions.&quot;                                                       
+## 
+## $`Afghan president agrees Taliban prisoner release - Al Jazeera English`
+## [1] &quot;The resolution recommending the release of the prisoners was passed on Sunday at the end of a three-day Loya Jirga, a traditional Afghan meeting of tribal elders and other stakeholders held to decide on momentous issues.&quot;        
+## [2] &quot;\&quot;In order to remove the hurdles for the start of peace talks, stopping bloodshed, and for the good of the public, the jirga approves the release of 400 prisoners as demanded by the Taliban,\&quot; Jirga member Atefa Tayeb announced.&quot;
+## [3] &quot;The prisoners&#39; fate was a crucial hurdle in launching peace talks between the two sides.&quot;                                                                                                                                            
+## 
+## $`Trump and the suburbs: is he out of tune with America&#39;s increasingly diverse voters? - The Guardian`
+## [1] &quot;But suburban voters say they strongly disapprove of his handling of the protests, according to a New York Times/Siena College survey.&quot;
+## [2] &quot;Overall, recent polling shows suburban voters backing Biden by historic margins.&quot;                                                     
+## [3] &quot;Suburban women are not going to be fooled by Donald Trump’s antiquated notion of what they should care about.&quot;                        
+## 
+## $`It&#39;s decision time for Joe Biden. His VP pick could make history, with Harris, Rice among top contenders - USA TODAY`
+## [1] &quot;Voters and pundits will likely look more carefully at who will be able to succeed Biden due to his age.&quot;                                                              
+## [2] &quot;Through the course of the vice presidential vetting process, politicians, activists and voters have advocated that Biden choose a woman of color as his running mate.&quot;
+## [3] &quot;Biden has come under fire for comments he&#39;s made about the Black community.&quot;                                                                                          
+## 
+## $`Coronavirus: Redundancies rise fivefold as pandemic hits jobs - BBC News`
+## [1] &quot;These are external links and will open in a new window Close share panel Image copyright Getty Images&quot;            
+## [2] &quot;\&quot;It&#39;s been really upsetting and stressful,\&quot; says Will Bird, an events producer who was recently made redundant.&quot;
+## [3] &quot;Reid will need to move out of his apartment soon as he can no longer afford the rent without a job.&quot;              
+## 
+## $`MV Wakashio: Locals in Mauritius try to stop oil spill - BBC News`
+## [1] &quot;These are external links and will open in a new window Close share panel Image copyright Virtual Tour of Mauritius/REUTERS Image caption&quot;                                    
+## [2] &quot;The tanker is leaking tonnes of oil into surrounding waters Volunteers in Mauritius are scrambling to create cordons to keep leaking oil from a tanker away from the island.&quot;
+## [3] &quot;MV Wakashio ran aground on a coral reef off the Indian Ocean island on 25&quot;                                                                                                   
+## 
+## $`The Voting Will End Nov. 3. The Legal Battle Probably Won’t. - The New York Times`
+## [1] &quot;Continue reading the main story The Voting Will End Nov. 3.&quot;                                                                                                                                           
+## [2] &quot;The Legal Battle Probably&quot;                                                                                                                                                                             
+## [3] &quot;As the two parties clash over how to conduct an election in a pandemic, President Trump’s litigiousness and unfounded claims of fraud have increased the likelihood of epic postelection court fights.&quot;
+## 
+## $`Main opposition candidate goes into hiding on eve of crucial presidential vote in Belarus - CNN`
+## [1] &quot;Find out what&#39;s happening in the world as it unfolds.&quot;                                         
+## [2] &quot;Presidential candidate Svetlana Tikhanovskaya has gone into hiding ahead of Sunday&#39;s election.&quot;
+## [3] &quot;Moscow (CNN)&quot;                                                                                  
+## 
+## $`World leaders gather by video to pledge aid to Beirut, a day after violent protests rock the city - CNN`
+## [1] &quot;See the scene in Beirut as protesters call for a &#39;revolution&#39; 03:06 Beirut, Lebanon (CNN) French President Emmanuel Macron will bring together world leaders via video on Sunday to pledge aid to help Lebanon rebuild after the devastating explosion that ripped through its capital, Beirut, five days ago.&quot;
+## [2] &quot;US President Donald Trump is expected to join representatives from Germany, Italy, Spain, China, Saudi Arabia, the United Nations, the European Council and others for the donors&#39; conference, according to the Elysee Palace.&quot;                                                                                
+## [3] &quot;Lebanon has always deserved better from its leaders.&quot;                                                                                                                                                                                                                                                          
+## 
+## $`The Galaxy Note 20 doesn&#39;t come with headphones and that&#39;s a good thing - CNET`
+## [1] &quot;The Galaxy Note 20 doesn&#39;t come with headphones and that&#39;s a good thing Commentary: \&quot;I, for one, welcome our new insect overlords.\&quot;&quot;
+## [2] &quot;Aug. 9, 2020 5:00 a.m. PT Listen - 04:09&quot;                                                                                             
+## [3] &quot;The new Galaxy Note 20&quot;                                                                                                               
+## 
+## $`Rep. Walker calls for Falwell&#39;s resignation from Liberty University - Fox News`
+## [1] &quot;Walker calls for Falwell&#39;s resignation from Liberty University Falwell takes indefinite leave of absence Jerry Falwell Jr. joins Hannity to discuss Liberty University&#39;s lawsuit against the New York Times Liberty University files defamation suit against the New York Times over COVID coverage, accuses paper of falsely reporting coronavirus outbreak on campus.&quot;
+## [2] &quot;Rep. Mark Walker , R-N.C., called for the resignation of Liberty University president Jerry Falwell Jr. after images surfaced of him on a yacht with his arm around a woman and their pants unzipped.&quot;                                                                                                                                                                  
+## [3] &quot;“Jerry Falwell Jr’s ongoing behavior is appalling,” Walker tweeted.&quot;                                                                                                                                                                                                                                                                                                    
+## 
+## $`Next Year&#39;s Social Security Raise Will Probably Be Meager, at Best - The Motley Fool`
+## [1] &quot;Next Year&#39;s Social Security Raise Will Probably&quot;
+## [2] &quot;Be Meager, at Best&quot;                             
+## [3] &quot;It&#39;s time for an unfortunate reality check.&quot;    
+## 
+## $`TikTok To Sue Trump Administration On President&#39;s Executive Order Ban - NPR`
+## [1] &quot;President Trump&#39;s executive order prohibits transactions between U.S. citizens and TikTok&#39;s parent company starting in 45 days.&quot;                                                                      
+## [2] &quot;Mark Schiefelbein/AP hide caption toggle caption Mark Schiefelbein/AP President Trump&#39;s executive order prohibits transactions between U.S. citizens and TikTok&#39;s parent company starting in 45 days.&quot;
+## [3] &quot;Mark Schiefelbein/AP&quot;</code></pre>
+</div>

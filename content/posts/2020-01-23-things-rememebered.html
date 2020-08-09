@@ -1,0 +1,344 @@
+---
+title: things rememebered
+date: '2020-01-23'
+slug: things-rememebered
+---
+
+
+
+<p>Via a sample of sentences extracted at random from the full Gutenberg Corpus. Sampled again here for sentences beginning with <code>I remember</code>.</p>
+<pre class="r"><code>library(tidyverse)
+setwd(local_gutenberg_sample)
+gut_samp_sent &lt;- readRDS (&#39;gutenberg_sample_sentences.RDS&#39;)
+meta &lt;- jsonlite::fromJSON(readLines(&#39;gutenberg-metadata.json&#39;), 
+                           flatten = FALSE) %&gt;%
+  filter(Language == &#39;English&#39; &amp;
+           nchar(`Author Birth`) == 4 &amp; 
+           !`Author Birth` %in% c(&#39;?&#39;, &#39;NULL&#39;, &#39;NA&#39;)) %&gt;%
+  mutate(`Author Birth` = unlist(`Author Birth`))
+    
+set.seed(99)
+gut_samp_sent %&gt;%
+  filter(grepl(&#39;^I remember &#39;, text)) %&gt;%
+  filter(!grepl(&#39;[A-Z][a-z]\\.$&#39;, text)) %&gt;%
+  inner_join(meta %&gt;% rename(doc_id = `gd-path`)) %&gt;%
+  sample_n(75) %&gt;%
+  arrange(`Author Birth`) %&gt;%
+  #mutate(n = row_number(`Author Birth`)) %&gt;%
+  rename(AD = `Author Birth`) %&gt;%
+  select(`AD`, text) %&gt;%
+  knitr::kable(align = c(&#39;c&#39;, &#39;l&#39;))</code></pre>
+<table>
+<colgroup>
+<col width="3%" />
+<col width="96%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center">AD</th>
+<th align="left">text</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">1672</td>
+<td align="left">I remember an Italian verse that ran thus, word for word: “And turned my rage into pity;” which the English for rhyme’s sake translated: “And into pity turned my rage.”</td>
+</tr>
+<tr class="even">
+<td align="center">1702</td>
+<td align="left">I remember I happened that day to preach a lecture from Psalm cxix, 158, “I beheld the transgressions, and was grieved because they kept not thy law.”</td>
+</tr>
+<tr class="odd">
+<td align="center">1731</td>
+<td align="left">I remember a young man of the name of Nairne at Cambridge, who walking on the edge of a barge fell into the river.</td>
+</tr>
+<tr class="even">
+<td align="center">1749</td>
+<td align="left">I remember one day, as I was seating under <em>a tree</em>, three or four ladies came to me, and asked me _to sing.</td>
+</tr>
+<tr class="odd">
+<td align="center">1778</td>
+<td align="left">I remember after asking for some one a place of three thousand francs, which he granted me, I heard him exclaim, "Three thousand francs!</td>
+</tr>
+<tr class="even">
+<td align="center">1792</td>
+<td align="left">I remember when the “King’s Own” was finished, I was as happy as a pedestrian who had accomplished his thousand miles in a thousand hours.</td>
+</tr>
+<tr class="odd">
+<td align="center">1793</td>
+<td align="left">I remember the calm and resolute tone in which she declared that she was ready, if need were, to place her head on the block.</td>
+</tr>
+<tr class="even">
+<td align="center">1803</td>
+<td align="left">I remember this chamber, when ye first came to your father’s hall.</td>
+</tr>
+<tr class="odd">
+<td align="center">1804</td>
+<td align="left">I remember that the valiant Marino Contarino died in this affray; and, with immortal example, the four brothers Cornaro; alas!</td>
+</tr>
+<tr class="even">
+<td align="center">1804</td>
+<td align="left">I remember one day: let me see, it must be, ay!</td>
+</tr>
+<tr class="odd">
+<td align="center">1806</td>
+<td align="left">I remember all about it.</td>
+</tr>
+<tr class="even">
+<td align="center">1807</td>
+<td align="left">I remember him; a stout and willing lad!</td>
+</tr>
+<tr class="odd">
+<td align="center">1808</td>
+<td align="left">I remember her well–Mary Peterkin–a truly Scandinavian name.</td>
+</tr>
+<tr class="even">
+<td align="center">1810</td>
+<td align="left">I remember a story of a good old Antiburgher minister.</td>
+</tr>
+<tr class="odd">
+<td align="center">1812</td>
+<td align="left">I remember being scolded by my nurses for taking them up in my hands and letting them leap from one hand to the other.</td>
+</tr>
+<tr class="even">
+<td align="center">1815</td>
+<td align="left">I remember riding with confidence over places where at first I deemed it prudent to dismount.</td>
+</tr>
+<tr class="odd">
+<td align="center">1825</td>
+<td align="left">I remember it well, for the sound sent such a thrill to my heart.</td>
+</tr>
+<tr class="even">
+<td align="center">1828</td>
+<td align="left">I remember looking down on two cats with arched backs in the solitary arena of the Verona amphitheatre.</td>
+</tr>
+<tr class="odd">
+<td align="center">1830</td>
+<td align="left">I remember he said, ’She is a right good woman is my wife, and I’ll see her and the boy again, please God.</td>
+</tr>
+<tr class="even">
+<td align="center">1831</td>
+<td align="left">I remember well one morning that I had with misery in its haunts and my search for a house of whose occupants I had been told.</td>
+</tr>
+<tr class="odd">
+<td align="center">1831</td>
+<td align="left">I remember thinking that if the two men came to an active dispute, I should like to be present.</td>
+</tr>
+<tr class="even">
+<td align="center">1832</td>
+<td align="left">I remember seeing an aged man tottering along a rough road in France, with a heavy bag of geese on his back.</td>
+</tr>
+<tr class="odd">
+<td align="center">1834</td>
+<td align="left">I remember several such scenes–one especially.</td>
+</tr>
+<tr class="even">
+<td align="center">1835</td>
+<td align="left">I remember their faces perfectly.</td>
+</tr>
+<tr class="odd">
+<td align="center">1836</td>
+<td align="left">I remember as if it were yesterday, how the wind slammed the window-blinds, and blew out the street-lamps.</td>
+</tr>
+<tr class="even">
+<td align="center">1837</td>
+<td align="left">I remember that I liked hearing his old jokes, not because they were jokes, but because they were old and endeared by long association.</td>
+</tr>
+<tr class="odd">
+<td align="center">1837</td>
+<td align="left">I remember my original introduction to a bear of this species.</td>
+</tr>
+<tr class="even">
+<td align="center">1840</td>
+<td align="left">I remember only the incident that the flag-officer on one occasion played at old-time warfare of his youth, by showing to a passing vessel a Spanish flag instead of the American.</td>
+</tr>
+<tr class="odd">
+<td align="center">1844</td>
+<td align="left">I remember two others of my writings, translations which Leo Nikolaevich commissioned me to do.</td>
+</tr>
+<tr class="even">
+<td align="center">1844</td>
+<td align="left">I remember that scene where Clive, at Barnes Newcome’s Lecture on the Poetry of the Affections, sees Ethel who is lost to him.</td>
+</tr>
+<tr class="odd">
+<td align="center">1844</td>
+<td align="left">I remember <em>him</em> well enough."</td>
+</tr>
+<tr class="even">
+<td align="center">1847</td>
+<td align="left">I remember when I was a boy in petticoats—-" He took the tiny cowrie of dazzling whiteness she handed him by way of answer, and said no more.</td>
+</tr>
+<tr class="odd">
+<td align="center">1850</td>
+<td align="left">I remember writing out the message in a clear, bold hand, and addressing the foolscap envelope in the same way.</td>
+</tr>
+<tr class="even">
+<td align="center">1852</td>
+<td align="left">I remember that when she played Meg Merrilies I was cast for Henry Bertram, on the principle, seemingly, that an actor with no singing voice is admirably fitted for a singing part.</td>
+</tr>
+<tr class="odd">
+<td align="center">1853</td>
+<td align="left">I remember an anecdote which a very intelligent old lady used to tell me about her mother.</td>
+</tr>
+<tr class="even">
+<td align="center">1853</td>
+<td align="left">I remember reading here Froude’s “Carlyle in London,” which is a biography worthy to stand beside Boswell.</td>
+</tr>
+<tr class="odd">
+<td align="center">1853</td>
+<td align="left">I remember his writing to the prior of Belmont, when I was a novice there, enclosing daisies picked on Christmas Day.</td>
+</tr>
+<tr class="even">
+<td align="center">1854</td>
+<td align="left">I remember once leaving the table on account of some censure or careless remark.</td>
+</tr>
+<tr class="odd">
+<td align="center">1856</td>
+<td align="left">I remember that he was much astonished at my parting with two blankets for the sake of such a worthless old creature.</td>
+</tr>
+<tr class="even">
+<td align="center">1857</td>
+<td align="left">I remember the consternation among certain teachers when Deppe and Raif, with his dumb thumb and blind fingers, abolished <em>all</em> the classic piano studies.</td>
+</tr>
+<tr class="odd">
+<td align="center">1857</td>
+<td align="left">I remember his passionate state:–"Haviland, do not wonder at me.</td>
+</tr>
+<tr class="even">
+<td align="center">1858</td>
+<td align="left">I remember one thing he said.</td>
+</tr>
+<tr class="odd">
+<td align="center">1859</td>
+<td align="left">I remember sitting in a garden one sunny afternoon in the suburbs of London.</td>
+</tr>
+<tr class="even">
+<td align="center">1860</td>
+<td align="left">I remember as an illustration of the saving power of this definite connection, a tale told me by a distinguished labor leader in England.</td>
+</tr>
+<tr class="odd">
+<td align="center">1860</td>
+<td align="left">I remember helping mother to dye them also, and in the spring she made her own soap.</td>
+</tr>
+<tr class="even">
+<td align="center">1861</td>
+<td align="left">I remember wondering about the new picture Gordon would begin and, before I fell asleep, some trick of my mind presented the thing to me.</td>
+</tr>
+<tr class="odd">
+<td align="center">1862</td>
+<td align="left">I remember I had it to sweep up the fireplace, because I could not find a brush."</td>
+</tr>
+<tr class="even">
+<td align="center">1862</td>
+<td align="left">I remember Doss Umpey told my Joe the creature was pretty bad.</td>
+</tr>
+<tr class="odd">
+<td align="center">1863</td>
+<td align="left">I remember my housekeeper telling me that Harding had asked her if her clothes had been ransacked by the detectives."</td>
+</tr>
+<tr class="even">
+<td align="center">1863</td>
+<td align="left">I remember it very well, and the jolly picnics and excursions that you and my mother and I took together afterward.</td>
+</tr>
+<tr class="odd">
+<td align="center">1864</td>
+<td align="left">I remember you lost, and I won.</td>
+</tr>
+<tr class="even">
+<td align="center">1866</td>
+<td align="left">I remember hearing that he’d collared one on one of the stations he stuck up last time he was down here.</td>
+</tr>
+<tr class="odd">
+<td align="center">1866</td>
+<td align="left">I remember two of them kids fairly well.</td>
+</tr>
+<tr class="even">
+<td align="center">1868</td>
+<td align="left">I remember this “Sweet Auburn” when no sacred associations made it sweeter, and when its trees looked down on no funerals but those of the bird and the bee.</td>
+</tr>
+<tr class="odd">
+<td align="center">1872</td>
+<td align="left">I remember the simple old lady put down her gun and pulled the spectacles from her forehead to her nose, read my note that I was ‘going to the front’ and–kissed me!</td>
+</tr>
+<tr class="even">
+<td align="center">1872</td>
+<td align="left">I remember that one of his ideas was that we ought all to write the King a personal note of congratulation upon his attaining his majority.</td>
+</tr>
+<tr class="odd">
+<td align="center">1875</td>
+<td align="left">I remember when I was young–" “For God’s sake, dry up!”</td>
+</tr>
+<tr class="even">
+<td align="center">1876</td>
+<td align="left">I remember well that memorable day in July, 1918, when I heard from the lips of M.</td>
+</tr>
+<tr class="odd">
+<td align="center">1876</td>
+<td align="left">I remember how vaguely I used to wonder who it was that was going to grease her knees and why she should feel called upon to have them greased at all.</td>
+</tr>
+<tr class="even">
+<td align="center">1878</td>
+<td align="left">I remember one exquisite sunset–one of those superlative sunsets that burn themselves into the consciousness with a joy akin to pain, and of which only a few are allotted to each human life.</td>
+</tr>
+<tr class="odd">
+<td align="center">1879</td>
+<td align="left">I remember how my acquaintance began with “The Lady of the Lake,” even before I read it.</td>
+</tr>
+<tr class="even">
+<td align="center">1879</td>
+<td align="left">I remember how a certain European monarch once lay seriously ill and my evening newspaper reported that his temperature was 38.3 degrees C.</td>
+</tr>
+<tr class="odd">
+<td align="center">1880</td>
+<td align="left">I remember that it was a brilliant starlight night, but I do not think that there was any moon–at all events, at that hour.</td>
+</tr>
+<tr class="even">
+<td align="center">1885</td>
+<td align="left">I remember making admirable, lucid plans to meet the event.</td>
+</tr>
+<tr class="odd">
+<td align="center">1886</td>
+<td align="left">I remember I nodded, for further acquaintance with war inclines me to his opinion.</td>
+</tr>
+<tr class="even">
+<td align="center">1886</td>
+<td align="left">I remember only one thing about that descent: I was overcome with vexation when the rope stopped and I found myself, feet dangling, against the perfectly smooth wall.</td>
+</tr>
+<tr class="odd">
+<td align="center">1887</td>
+<td align="left">I remember crossing one bitter February day from Boulogne to Folkestone.</td>
+</tr>
+<tr class="even">
+<td align="center">1887</td>
+<td align="left">I remember this same company commander in another action.</td>
+</tr>
+<tr class="odd">
+<td align="center">1888</td>
+<td align="left">I remember Judge Krink had dirty fingernails.</td>
+</tr>
+<tr class="even">
+<td align="center">1888</td>
+<td align="left">I remember all the white soft wicks, peeping half out, waiting for light.</td>
+</tr>
+<tr class="odd">
+<td align="center">1889</td>
+<td align="left">I remember one fat old man who sold porous earthenware jars–customers invariably addressed him as “Abu hub”–“Father of water-coolers.”</td>
+</tr>
+<tr class="even">
+<td align="center">1897</td>
+<td align="left">I remember a prayer, which you wrote, has been asked by a certain friend to be read daily.</td>
+</tr>
+<tr class="odd">
+<td align="center">1900</td>
+<td align="left">I remember seeing him on the boat.</td>
+</tr>
+<tr class="even">
+<td align="center">1906</td>
+<td align="left">I remember how scared she was that time she found a harmless little phytopod.</td>
+</tr>
+<tr class="odd">
+<td align="center">1914</td>
+<td align="left">I remember the day the Chief of Vocation took me before the council.</td>
+</tr>
+</tbody>
+</table>

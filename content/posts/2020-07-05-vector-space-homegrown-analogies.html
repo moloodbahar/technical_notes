@@ -1,0 +1,137 @@
+---
+title: vector space & homegrown analogies
+date: '2020-07-05'
+slug: vector-space-homegrown-analogies
+---
+
+
+
+<p>A brief guide for building novel analogy questions for vector space model evaluation. While most studies implement pre-canned analogy tasks, it is often useful to create, eg, content-specific analogy tasks. Using the <code>text2vec</code> R-based NLP framework.</p>
+<div id="sample-vector-space-model" class="section level2">
+<h2>Sample vector space model</h2>
+<p>For demonstration purposes, we (re-)use a model based on Google n-gram data (circa 1983-2008); available <a href="https://github.com/jaytimm/google_ngrams_and_R/tree/master/google_one_percent_embeddings">here</a>. Model: PPMI-SVD; model details: window size = 5x5, dimensions = 250.</p>
+<pre class="r"><code>setwd(local_ngram)
+qvec &lt;- readRDS(&#39;Q-[1983,2008].rds&#39;)
+rownames(qvec) &lt;- tolower(rownames(qvec))
+
+# scale to 0-1 
+qvec &lt;- apply(qvec, 
+              MARGIN = 2, 
+              FUN = function(X) (X - min(X))/diff(range(X)))
+
+str(qvec) # a numerical matrix -- </code></pre>
+<pre><code>##  num [1:16354, 1:250] 0.754 0.829 0.93 0.715 0.743 ...
+##  - attr(*, &quot;dimnames&quot;)=List of 2
+##   ..$ : chr [1:16354] &quot;aaron&quot; &quot;ab&quot; &quot;aback&quot; &quot;abandon&quot; ...
+##   ..$ : chr [1:250] &quot;1&quot; &quot;2&quot; &quot;3&quot; &quot;4&quot; ...</code></pre>
+</div>
+<div id="a-set-of-semantic-relations-defined-as-a-b" class="section level2">
+<h2>A set of semantic relations defined as <code>a : b</code></h2>
+<p>Examples randomly assembled from web &amp; randomly assigned categories for demonstration.</p>
+<pre class="r"><code>new_ones &lt;- c(&#39;hammer : nail&#39;,  &#39;comb : hair&#39;,
+              &#39;white : black&#39;, &#39;up : down&#39;,
+              &#39;mansion : shack&#39;, &#39;yacht : dinghy&#39;,
+              &#39;short : light&#39;, &#39;long : heavy&#39;,
+              &#39;bees : hive&#39;,  &#39;bears : den&#39;, 
+              &#39;speak : sing&#39;, &#39;walk : dance&#39;,
+              &#39;chef : food&#39;, &#39;sculptor : stone&#39;,
+              &#39;like : love&#39;, &#39;dislike : hate&#39;)
+
+category &lt;- c(rep(&#39;type1&#39;, 8), rep(&#39;type2&#39;, 8))
+
+df &lt;- data.frame(category, new_ones) %&gt;%
+  separate(new_ones, into = c(&#39;a&#39;, &#39;b&#39;), sep = &#39; : &#39;)
+
+head(df) %&gt;% knitr::kable()</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">category</th>
+<th align="left">a</th>
+<th align="left">b</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">type1</td>
+<td align="left">hammer</td>
+<td align="left">nail</td>
+</tr>
+<tr class="even">
+<td align="left">type1</td>
+<td align="left">comb</td>
+<td align="left">hair</td>
+</tr>
+<tr class="odd">
+<td align="left">type1</td>
+<td align="left">white</td>
+<td align="left">black</td>
+</tr>
+<tr class="even">
+<td align="left">type1</td>
+<td align="left">up</td>
+<td align="left">down</td>
+</tr>
+<tr class="odd">
+<td align="left">type1</td>
+<td align="left">mansion</td>
+<td align="left">shack</td>
+</tr>
+<tr class="even">
+<td align="left">type1</td>
+<td align="left">yacht</td>
+<td align="left">dinghy</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="build-analogies" class="section level2">
+<h2>Build analogies</h2>
+<p>As <code>a : b</code>’ :: <code>a : b</code>" – all permutations per group.</p>
+<pre class="r"><code>build_questions &lt;- function (x) { 
+  
+  lapply(unique(x$category), function(i) {
+    
+    comcaps &lt;-subset(x, category == i)
+    combos &lt;- data.frame(t(combn(paste(comcaps$a, comcaps$b, 
+                                       sep = &#39; &#39;), m = 2))) 
+    a &lt;- paste(combos$X1, combos$X2, sep = &#39; &#39;)
+    b &lt;- paste(combos$X2, combos$X1, sep = &#39; &#39;)
+    combos3 &lt;- data.frame(analogy = c(a, b))
+    combos3$category &lt;- i
+    combos3
+    })
+}</code></pre>
+<p>Apply function and format data as ‘Google analogy’ data structure</p>
+<pre class="r"><code>new_test &lt;- build_questions (df) %&gt;% ###
+  bind_rows() %&gt;%
+  group_by(category) %&gt;%
+  do(add_row(., .before=0)) %&gt;%
+  ungroup() %&gt;%
+  fill(category, .direction = c(&quot;up&quot;)) %&gt;%
+  mutate(category = paste0(&#39;: &#39;, gsub(&#39; |\\.txt$&#39;, &#39;&#39;, category)),
+         full = ifelse(is.na(analogy), category, analogy)) %&gt;%
+  select(full)</code></pre>
+</div>
+<div id="prepare-analogies-via-text2vec" class="section level2">
+<h2>Prepare analogies via <code>text2vec</code></h2>
+<pre class="r"><code>setwd(git_files)
+writeLines(new_test$full,&#39;new_test.txt&#39;)
+new_analogy_set &lt;- text2vec::prepare_analogy_questions(
+        questions_file_path = paste0(git_files, &#39;new_test.txt&#39;), 
+        vocab_terms = rownames(qvec))</code></pre>
+<pre><code>## INFO  [07:49:05.144] 54 full questions found out of 112 total</code></pre>
+</div>
+<div id="evaluate-via-text2vec" class="section level2">
+<h2>Evaluate via <code>text2vec</code></h2>
+<pre class="r"><code>new_results &lt;- text2vec::check_analogy_accuracy(
+  questions_list = new_analogy_set, 
+  m_word_vectors = qvec)</code></pre>
+<pre><code>## INFO  [07:49:05.482] type1: correct 1 out of 12, accuracy = 0.0833 
+## INFO  [07:49:05.719] type2: correct 0 out of 42, accuracy = 0.0000 
+## INFO  [07:49:05.729] OVERALL ACCURACY = 0.0185</code></pre>
+</div>
+<div id="summary" class="section level2">
+<h2>Summary</h2>
+<p>For a slightly more detailed description of vector space evaluation via word analogy tasks, see this <a href="https://github.com/jaytimm/tech-notes-american-politics/blob/master/notes/analogy-tests.md">brief note</a>.</p>
+</div>

@@ -1,0 +1,105 @@
+---
+title: text summarization & textrank
+date: '2020-03-10'
+slug: text-summarization-textrank
+---
+
+
+
+## Grab some articles from GoogleNews
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+topstories_meta <- quicknews::qnews_get_meta (language="en",
+                                              country="us", 
+                                              type="topstories") %>%
+  slice(1:20)
+
+topstories_meta %>% select(date, title) %>% head() %>% knitr::kable()
+```
+
+
+```{r message=FALSE, warning=FALSE}
+topstories_tif <- topstories_meta %>% quicknews::qnews_scrape_web ()
+```
+
+
+
+## Annotate text
+
+```{r include=FALSE}
+local <- '/home/jtimm/jt_work/work01/plants_entities_clintrials/resources/'
+```
+
+
+I am not sure if this step is ultimately necessary.  Text annotation is such a bog on workflow, and very seldomly gets you anything outside of the world of linguistics-proper.
+
+```{r message=FALSE, warning=FALSE}
+setwd(local)
+udmodel <- udpipe::udpipe_load_model('english-ewt-ud-2.3-181115.udpipe')
+topstories <- udpipe::udpipe_annotate(udmodel, 
+                                      x = topstories_tif$text)
+```
+
+
+
+## Filter & clean
+
+```{r}
+topstories <- as.data.frame(topstories) %>%
+  mutate(doc_id = as.numeric(gsub('doc', '', doc_id))) %>%
+  group_by(doc_id) %>%
+  mutate(n = length(unique(sentence_id))) %>%
+  filter(n > 20) %>%
+  ungroup()
+```
+
+
+## Build terminology set
+
+```{r message=FALSE, warning=FALSE}
+terminology <- split(subset(topstories, 
+                            upos %in% c("NOUN", "ADJ")), 
+                     topstories$doc_id)
+```
+
+
+
+## Extract sentences from annotation object
+
+```{r}
+sentences <- topstories %>%
+  select(sentence_id, sentence, doc_id) %>%
+  filter(nchar(sentence) > 10) %>%
+  filter(!grepl('AM|PM|LLC|All Rights Reserved', sentence)) %>%
+  distinct() %>%
+  mutate(doc_id = as.numeric(gsub('doc', '', doc_id)))
+
+sentences_split <- split(sentences, sentences$doc_id)
+```
+
+
+## Apply PageRank algorithm
+
+```{r}
+tr <- lapply(1:length(sentences_split), function(x) { 
+             textrank::textrank_sentences(data = sentences_split[[x]], 
+                                          terminology = terminology[[x]])})
+
+sts <- lapply(tr, function(x) {summary(x, 
+                                       n = 3, 
+                                       keep.sentence.order = TRUE)})
+
+titles <- topstories_tif %>% filter(doc_id %in% unique(sentences$doc_id))
+names(sts) <- titles$title
+```
+
+
+
+## Summarize results
+
+```{r echo=FALSE}
+sts
+```
+
+

@@ -1,0 +1,171 @@
+---
+title: 'vector space & analogy: briefly'
+date: '2020-07-03'
+slug: vector-space-analogy-briefly
+---
+
+A brief guide for using the vector offset method to evaluate efficacy of vector space models in solving word analogy problems.  Using the `text2vec` R-based NLP framework, and two analogy tests for evaluation: Mikolov et al. (2013) & Gladkova et al. (2016). 
+
+
+## Sample vector space model
+
+For demonstration purposes, we (re-)use a model based on Google n-gram data (circa 1983-2008); available [here](https://github.com/jaytimm/google_ngrams_and_R/tree/master/google_one_percent_embeddings).  Model: PPMI-SVD; model details: window size = 5x5, dimensions = 250.
+
+
+```{r include=FALSE}
+local_ngram <- '/home/jtimm/jt_work/GitHub/git_projects/google_ngrams_and_R/google_one_percent_embeddings'
+```
+
+
+```{r message=FALSE, warning=FALSE}
+setwd(local_ngram)
+qvec <- readRDS('Q-[1983,2008].rds')
+rownames(qvec) <- tolower(rownames(qvec))
+
+# scale to 0-1 
+qvec <- apply(qvec, 
+              MARGIN = 2, 
+              FUN = function(X) (X - min(X))/diff(range(X)))
+
+str(qvec) # a numerical matrix -- 
+```
+
+
+
+## Analogy datasets
+
+[Several analogy datasets](https://aclweb.org/aclwiki/Analogy_(State_of_the_art)) have been developed over the past decade or so.   The [Google analogy set](https://aclweb.org/aclwiki/Google_analogy_test_set_(State_of_the_art)) is (more or less) the standard.  `text2vec` functions for analogy testing have been developed specifically with this dataset in mind. 
+
+
+
+```{r include=FALSE}
+google_local_file <- '/home/jtimm/jt_work/GitHub/technical_notes/resources/analogy/questions-words.txt'
+```
+
+
+### Google (Mikolov 2013)
+
+Sample set of analogies (along with category header):
+
+```{r}
+egs <- readLines(google_local_file)
+head(egs)
+```
+
+
+```{r}
+google_analogy_set <- text2vec::prepare_analogy_questions(
+        questions_file_path = google_local_file, 
+        vocab_terms = rownames(qvec)) 
+```
+
+
+
+### BATS (Gladkova et al 2016)
+
+[Dataset & description](https://aclweb.org/aclwiki/Bigger_analogy_test_set_(State_of_the_art)).  Data have been re-shaped in Google format.  Analogies with more than one "correct answer" have been eliminated; hence, dataset presented here is decidedly smaller than original.  
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+bats_local_file<- '/home/jtimm/jt_work/GitHub/technical_notes/resources/analogy/bats-questions-words.txt'
+```
+
+
+```{r}
+bats_analogy_set <- text2vec::prepare_analogy_questions(
+        questions_file_path = bats_local_file, 
+        vocab_terms = rownames(qvec)) 
+```
+
+
+
+### A summary
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+ans1 <- lapply(c(bats_local_file, google_local_file), 
+               read.csv, header = F) 
+names(ans1) <- c('bats', 'google')
+
+analogy_summary <- ans1 %>%
+  bind_rows(.id = 'dataset') %>%
+  mutate(category = ifelse(grepl(':', V1), V1, NA)) %>%
+  fill(category) %>%
+  filter(V1 != category) %>%
+  mutate(category = tolower(gsub(': ', '', category))) %>%
+  rename(analogy = V1) %>%
+  group_by(dataset, category) %>%
+  mutate(all_n = length(analogy)) %>%
+  sample_n(1) %>%
+  ungroup() %>%
+  select(dataset, category, analogy, all_n) %>%
+  mutate(analogy = gsub(' ', ':', analogy),
+         analogy = gsub("([^:]+:[^:]+):", "\\1 | ", analogy))
+```
+
+
+
+## Test
+
+Via the `text2vec::check_analogy_accuracy` function:
+
+```{r eval=FALSE}
+x <- c(google_analogy_set, bats_analogy_set)
+y <- Filter(function(x) length(x) > 50, x)
+  
+res <- text2vec::check_analogy_accuracy(
+  questions_list = y, 
+  m_word_vectors = qvec)
+```
+
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+res <- readRDS('/home/jtimm/jt_work/GitHub/technical_notes/resources/analogy/res.rds')
+```
+
+
+
+## Results
+
+Tables below summarize the accuracy of the n-gram-based VSM on Google/BATS categories.  Y = # correct; per_Y = accuracy.  
+
+### Overview 
+
+```{r message=FALSE, warning=FALSE}
+res %>%
+  left_join(analogy_summary) %>%
+  mutate(correct = ifelse(predicted == actual, 'Y', 'N')) %>%
+  group_by(dataset, correct) %>%
+  summarize(n = n()) %>%
+  ungroup() %>%
+  spread(correct, n) %>%
+  mutate(per_correct = round(Y/(Y+N)*100, 1)) %>%
+  knitr::kable()
+```
+
+
+### By category
+
+```{r message=FALSE, warning=FALSE}
+res %>%
+  mutate(correct = ifelse(predicted == actual, 'Y', 'N')) %>%
+  group_by(category, correct) %>%
+  summarize(n = n()) %>%
+  spread(correct, n) %>%
+  mutate(Y = ifelse(is.na(Y), 0, Y),
+         total = Y+N,
+         per_Y = round(Y/total*100, 1)) %>%
+  full_join(analogy_summary) %>%
+  mutate(category = gsub('^.*/|: ', '', category)) %>%
+  select(dataset, category, analogy, total, Y, per_Y) %>%
+  arrange(dataset, category) %>%
+  knitr::kable()
+```
+
+
+
+## References
+
+Gladkova, A., Drozd, A., & Matsuoka, S. (2016, June). Analogy-based detection of morphological and semantic relations with word embeddings: what works and what doesn’t. In *Proceedings of the NAACL Student Research Workshop* (pp. 8-15).
+
+Mikolov, T., Chen, K., Corrado, G., & Dean, J. (2013). Efficient estimation of word representations in vector space. *arXiv preprint arXiv:1301.3781*.
+

@@ -1,0 +1,26 @@
+---
+title: front-line house democrats
+date: '2019-12-09'
+slug: front-line-house-democrats
+---
+
+>The table below highlights the 30 Democrats in the 116th House representing districts won by DJT in 2016.  Full data set available [here](https://github.com/jaytimm/uspoliticalextras/blob/master/clean-data-sets/thirty-one-house-democrats.csv). Methods for building data set available [here](https://www.jtimm.net/2019/12/13/frontline-democrats/).
+
+*Updated per Jeff Van Drew's [party switch](https://www.rollcall.com/2019/12/14/impeachment-costing-democrats-a-house-member-as-van-drew-plans-party-switch/).*
+
+
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+url1 <- 'https://raw.githubusercontent.com/jaytimm/uspoliticalextras/master/clean-data-sets/thirty-one-house-democrats.csv'
+fl30 <- read.csv(url(url1)) %>% 
+  rename(dist = district_code, 
+         st = state_abbrev, 
+         rep = house_rep,
+         rep_margin = house_rep_margin, 
+         fr = is_fresh) %>%
+  select(-bioguide_id, -house_flip)
+
+fl30 %>%
+  knitr::kable()
+```

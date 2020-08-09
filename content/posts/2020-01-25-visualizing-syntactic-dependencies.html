@@ -1,0 +1,65 @@
+---
+title: visualizing syntactic dependencies
+date: '2020-01-25'
+slug: visualizing-syntactic-dependencies
+---
+
+
+
+<p>Dependency parsing via <code>udpipe</code> and visualization of dependencies via <code>igraph</code> and <code>ggraph</code>. Graph function (below) taken directly from <a href="http://bnosac.be/index.php/blog/93-dependency-parsing-with-udpipe/">this post</a>. The author, <a href="https://github.com/jwijffels">J. Wiffels</a>, is an incredible NLP resource.</p>
+<div id="create-annotation-object" class="section level2">
+<h2>Create annotation object</h2>
+<pre class="r"><code>setwd(local_annotator)
+udmodel &lt;- udpipe::udpipe_load_model(&#39;english-ewt-ud-2.3-181115.udpipe&#39;)
+sentence &lt;- &quot;I wish for him only good things&quot;
+sent_depend &lt;- udpipe::udpipe(sentence , udmodel$file)</code></pre>
+</div>
+<div id="dependency-visualization-function" class="section level2">
+<h2>Dependency visualization function</h2>
+<pre class="r"><code>library(tidyverse)
+plot_annotation &lt;- function(x, size = 3){
+  
+  x &lt;- x[!is.na(x$head_token_id), ]
+  x &lt;- x[x$sentence_id %in% min(x$sentence_id), ]
+  edges &lt;- x[x$head_token_id != 0, c(&quot;token_id&quot;, 
+                                     &quot;head_token_id&quot;, 
+                                     &quot;dep_rel&quot;)]
+  edges$label &lt;- edges$dep_rel
+  
+  g &lt;- igraph::graph_from_data_frame(edges,
+                                     vertices = x[, c(&quot;token_id&quot;,
+                                                      &quot;token&quot;,
+                                                      &quot;lemma&quot;,
+                                                      &quot;upos&quot;,
+                                                      &quot;xpos&quot;,
+                                                      &quot;feats&quot;)],
+                                     directed = TRUE)
+  
+  ggraph::ggraph(g, layout = &quot;linear&quot;) +
+    ggraph::geom_edge_arc(ggplot2::aes(label = dep_rel, vjust = -0.20),
+                          arrow = grid::arrow(length = unit(4, &#39;mm&#39;), 
+                                              ends = &quot;last&quot;, 
+                                              type = &quot;closed&quot;),
+                          end_cap = ggraph::label_rect(&quot;w123&quot;),
+                          label_colour = &quot;#55752f&quot;, 
+                          check_overlap = TRUE, 
+                          label_size = size) +
+    
+    ggraph::geom_node_label(ggplot2::aes(label = token), 
+                            col = &quot;steelblue&quot;, 
+                            size = size, 
+                            fontface = &quot;bold&quot;) +
+    
+    ggraph::geom_node_text(ggplot2::aes(label = upos), 
+                           nudge_y = -0.35, 
+                           size = size) +
+    
+    ggraph::theme_graph() 
+  }</code></pre>
+</div>
+<div id="apply-function" class="section level2">
+<h2>Apply function</h2>
+<pre class="r"><code>plot_annotation(sent_depend, size = 4) +
+  labs(title = sentence)</code></pre>
+<p><img src="/posts/2020-01-25-visualizing-syntactic-dependencies_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+</div>

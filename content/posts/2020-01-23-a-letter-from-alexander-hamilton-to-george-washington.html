@@ -1,0 +1,41 @@
+---
+title: a relevant correspondance
+date: '2020-01-23'
+slug: a-letter-from-hamilton
+---
+
+
+
+<p>An excerpt from <a href="https://founders.archives.gov/documents/Hamilton/01-12-02-0184-0002">this letter</a> sent by Alexander Hamilton to George Washington on 1792-08-18, and quoted by Representative Adam Schiff on 2020-1-22 during the impeachment trial of Donald J. Trump. Accessed here via <a href="https://github.com/jaytimm/founders_online_corpus">this Git Hub resource</a> that makes the <a href="https://founders.archives.gov/">Founders Online</a> database of writings/correspondances available as a collection of RDS files.</p>
+<pre class="r"><code>library(tidyverse)
+setwd(local)
+gfiles &lt;- list.files(path = local, 
+                     pattern = &quot;rds&quot;, 
+                     recursive = TRUE) 
+
+ffc_washington &lt;- readRDS(gfiles[8])
+
+ah &lt;- ffc_washington %&gt;% 
+  filter(grepl(&#39;No popular Government was ever without its Catalines&#39;, og_text))
+ah1 &lt;- strsplit(ah$og_text, &#39;absurdity refutes itself.\n&#39;)[[1]][2]
+ah2 &lt;- strsplit(ah1, &#39;Objection the 15&#39;)[[1]][1]
+ah3 &lt;- gsub(&#39;When a man unprincipled&#39;, &#39;**When a man unprincipled&#39;, ah2)
+ah3 &lt;- gsub(&#39;whirlwind&#39;, &#39;whirlwind**&#39;, ah3)
+ah3 &lt;- gsub(&#39;\n\n&#39;, &#39;\n&#39;, ah3)
+ah3 &lt;- gsub(&#39;\n&#39;, &#39;\n&gt;\n&#39;, ah3)
+ah3 &lt;- paste(&#39;&gt;&#39;, gsub(&#39; *(\n*)*$&#39;, &#39;\\1&#39;, ah3))</code></pre>
+<div id="letter-excerpt" class="section level2">
+<h2>Letter excerpt</h2>
+<p>Text in bold reflects portion quoted by Impeachment Manager Adam Schiff on 1/22/20. Larger context (but not complete letter) presented below.</p>
+<blockquote>
+<p>The idea of introducing a monarchy or aristocracy into this Country, by employing the influence and force of a Government continually changing hands, towards it, is one of those visionary things, that none but madmen could meditate and that no wise men will believe.</p>
+<p>If it could be done at all, which is utterly incredible, it would require a long series of time, certainly beyond the life of any individual to effect it. Who then would enter into such plot? For what purpose of interest or ambition?</p>
+<p>To hope that the people may be cajoled into giving their sanctions to such institutions is still more chimerical. A people so enlightened and so diversified as the people of this Country can surely never be brought to it, but from convulsions and disorders, in consequence of the acts of popular demagogues.</p>
+<p>The truth unquestionably is, that the only path to a subversion of the republican system of the Country is, by flattering the prejudices of the people, and exciting their jealousies and apprehensions, to throw affairs into confusion, and bring on civil commotion. Tired at length of anarchy, or want of government, they may take shelter in the arms of monarchy for repose and security.</p>
+<p>Those then, who resist a confirmation of public order, are the true Artificers of monarchy—not that this is the intention of the generality of them. Yet it would not be difficult to lay the finger upon some of their party who may justly be suspected. <strong>When a man unprincipled in private life desperate in his fortune, bold in his temper, possessed of considerable talents, having the advantage of military habits—despotic in his ordinary demeanour—known to have scoffed in private at the principles of liberty—when such a man is seen to mount the hobby horse of popularity—to join in the cry of danger to liberty—to take every opportunity of embarrassing the General Government &amp; bringing it under suspicion—to flatter and fall in with all the non sense of the zealots of the day—It may justly be suspected that his object is to throw things into confusion that he may “ride the storm and direct the whirlwind</strong>.”</p>
+<p>It has aptly been observed that Cato was the Tory-Cæsar the whig of his day. The former frequently resisted—the latter always flattered the follies of the people. Yet the former perished with the Republic the latter destroyed it.</p>
+<p>No popular Government was ever without its Catalines &amp; its Cæsars. These are its true enemies.</p>
+<p>As far as I am informed the anxiety of those who are calumniated is to keep the Government in the state in which it is, which they fear will be no easy task, from a natural tendency in the state of things to exalt the local on the ruins of the National Government. Some of them appear to wish, in a constitutional way, a change in the judiciary department of the Government, from an apprehension that an orderly and effectual administration of Justice cannot be obtained without a more intimate connection between the state and national Tribunals. But even this is not an object of any set of men as a party. There is a difference of opinion about it on various grounds among those who have generally acted together. As to any other change of consequence, I believe nobody dreams of it.</p>
+<p>Tis curious to observe the anticipations of the different parties. One side appears to believe that there is a serious plot to overturn the state Governments and substitute monarchy to the present republican system. The other side firmly believes that there is a serious plot to overturn the General Government &amp; elevate the separate power of the states upon its ruins. Both sides may be equally wrong &amp; their mutual jealousies may be materially causes of the appearances which mutually disturb them, and sharpen them against each other.</p>
+</blockquote>
+</div>

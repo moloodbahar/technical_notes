@@ -1,0 +1,42 @@
+---
+title: a relevant correspondance
+date: '2020-01-23'
+slug: a-letter-from-hamilton
+---
+
+An excerpt from [this letter](https://founders.archives.gov/documents/Hamilton/01-12-02-0184-0002) sent by Alexander Hamilton to George Washington on 1792-08-18, and quoted by Representative Adam Schiff on 2020-1-22 during the impeachment trial of Donald J. Trump.  Accessed here via [this Git Hub resource](https://github.com/jaytimm/founders_online_corpus) that makes the [Founders Online](https://founders.archives.gov/) database of writings/correspondances available as a collection of RDS files. 
+
+
+
+```{r include=FALSE}
+local <- '/home/jtimm/jt_work/GitHub/git_projects/FoundersArchiveCorpus/data/'
+```
+
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+setwd(local)
+gfiles <- list.files(path = local, 
+                     pattern = "rds", 
+                     recursive = TRUE) 
+
+ffc_washington <- readRDS(gfiles[8])
+
+ah <- ffc_washington %>% 
+  filter(grepl('No popular Government was ever without its Catalines', og_text))
+ah1 <- strsplit(ah$og_text, 'absurdity refutes itself.\n')[[1]][2]
+ah2 <- strsplit(ah1, 'Objection the 15')[[1]][1]
+ah3 <- gsub('When a man unprincipled', '**When a man unprincipled', ah2)
+ah3 <- gsub('whirlwind', 'whirlwind**', ah3)
+ah3 <- gsub('\n\n', '\n', ah3)
+ah3 <- gsub('\n', '\n>\n', ah3)
+ah3 <- paste('>', gsub(' *(\n*)*$', '\\1', ah3))
+```
+
+
+
+## Letter excerpt
+
+Text in bold reflects portion quoted by Impeachment Manager Adam Schiff on 1/22/20.  Larger context (but not complete letter) presented below.
+
+`r ah3`

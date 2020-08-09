@@ -1,0 +1,39 @@
+---
+title: ideal points & presidential vote margins
+date: '2020-01-23'
+slug: ideal-points-presidential-vote-margins
+---
+
+
+A comparison of ideal points for members of the 111th, 113th & 115th Houses & Presidential vote margins for the 2008, 2012 & 2016 elections, respectively.  Plots re-created, in part, from Barber & McCarty (2015).
+
+
+
+```{r fig.height=8, message=FALSE, warning=FALSE}
+library(tidyverse)
+uspoliticalextras::uspol_dkos_returns_pres_cd %>%
+  mutate(margin = republican - democrat,
+         congress = case_when(year == 2008 ~ 111, 
+                              year == 2012 ~ 113,
+                              year == 2016 ~ 115)) %>%
+  left_join(Rvoteview:: member_search(chamber= 'House', 
+                                      congress = c(111, 113, 115))) %>%
+  ggplot(aes(y = (nominate.dim1), 
+             x = (margin), 
+             color = as.factor(party_name)))+ 
+  geom_point()+ #
+  geom_smooth(method="lm", se=T) +
+  ggthemes::scale_color_stata()+
+  theme_minimal() +
+  theme(legend.position = "none", 
+        plot.title = element_text(size=12),
+        axis.title = element_text())+
+  facet_wrap(~year, nrow = 3) +
+  xlab('Margins') + ylab('DW-Nominate D1') +
+  labs(title="Presidential Election Margins & DW-Nominate scores")
+```
+
+
+## References
+
+Barber, M., & McCarty, N. (2015). Causes and consequences of polarization. *Political negotiation: A handbook*, 37, 39-43.

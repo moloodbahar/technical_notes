@@ -2,8 +2,8 @@
 baseURL = "https://example.com/"
 
 languageCode = "en-us"
-title = "technical notes"
-theme = "hugo-theme-one"
+title = "Hugo Theme One"
+theme = "one"
 googleAnalytics = "UA-123-45"
 
 # Chroma Syntax Highlighting
