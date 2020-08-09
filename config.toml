@@ -1,5 +1,5 @@
 # End your baseURL with a `/` trailing slash, e.g. `https://example.com/`.
-baseURL = "https://example.com/"
+baseURL = "https://www.puremoe.net/"
 
 languageCode = "en-us"
 title = "technical notes"
