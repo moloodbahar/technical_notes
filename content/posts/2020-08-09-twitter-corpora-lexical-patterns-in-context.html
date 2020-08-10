@@ -1,0 +1,73 @@
+---
+title: twitter corpora & lexical patterns in context
+date: '2020-08-09'
+slug: twitter-corpora-lexical-patterns-in-context
+---
+
+<script src="/rmarkdown-libs/htmlwidgets/htmlwidgets.js"></script>
+<script src="/rmarkdown-libs/jquery/jquery.min.js"></script>
+<link href="/rmarkdown-libs/datatables-css/datatables-crosstalk.css" rel="stylesheet" />
+<script src="/rmarkdown-libs/datatables-binding/datatables.js"></script>
+<link href="/rmarkdown-libs/dt-core/css/jquery.dataTables.min.css" rel="stylesheet" />
+<link href="/rmarkdown-libs/dt-core/css/jquery.dataTables.extra.css" rel="stylesheet" />
+<script src="/rmarkdown-libs/dt-core/js/jquery.dataTables.min.js"></script>
+<link href="/rmarkdown-libs/crosstalk/css/crosstalk.css" rel="stylesheet" />
+<script src="/rmarkdown-libs/crosstalk/js/crosstalk.min.js"></script>
+
+
+<div id="corpus-preparation" class="section level2">
+<h2>Corpus &amp; preparation</h2>
+<p>Using <code>quanteda</code> and a <a href="https://github.com/jaytimm/flexdash-tweet-search">sample corpus of tweets</a> from US lawmakers during the 115th &amp; 116th congresses.</p>
+<pre class="r"><code>qorp &lt;- quanteda::corpus(twitter_tif)
+quanteda::docnames(qorp) &lt;- twitter_tif$status_id</code></pre>
+</div>
+<div id="corpus-search" class="section level2">
+<h2>Corpus search</h2>
+<pre class="r"><code>search &lt;- &#39;Democrat party&#39;</code></pre>
+<p>Here, a two-step process:</p>
+<ol style="list-style-type: decimal">
+<li>Filter corpus to texts containing lexical pattern, and then</li>
+</ol>
+<pre class="r"><code>qsub1 &lt;- quanteda::corpus_subset(qorp, 
+                                 grepl(search,   
+                                       quanteda::texts(qorp),
+                                       ignore.case = T))</code></pre>
+<ol start="2" style="list-style-type: decimal">
+<li>Highlight search in context.</li>
+</ol>
+<pre class="r"><code>splits &lt;- strsplit(search, &#39;\\|&#39;)[[1]]
+
+srs &lt;- lapply(splits, function(x) { 
+    quanteda::kwic(qsub1, 
+                   quanteda::phrase(x), 
+                   valuetype = &quot;regex&quot;, 
+                   case_insensitive = T,
+                   window = 15)  })
+
+names(srs) &lt;- splits</code></pre>
+</div>
+<div id="results" class="section level2">
+<h2>Results</h2>
+<pre class="r"><code>results &lt;- srs %&gt;% 
+  data.table::rbindlist() %&gt;%
+  left_join(quanteda::docvars(qorp), 
+            by = c(&#39;docname&#39; = &#39;status_id&#39;)) %&gt;%
+  mutate(context = paste0(&#39;... &#39;,
+                          pre, 
+                          &#39; &lt;span style=&quot;background-color:#dae2ba&quot;&gt;&#39;,
+                          keyword,
+                          &#39;&lt;/span&gt; &#39;,
+                          post,
+                          &#39; ...&#39;))</code></pre>
+<pre class="r"><code>results %&gt;%
+  select(created_at, screen_name, context) %&gt;%
+  DT::datatable(rownames = F,
+                escape = F,
+                options = list(sDom  = &#39;&lt;&quot;bottom&quot;&gt;ip&#39;,
+                               columnDefs = list(
+                                 list(className = &#39;dt-left&#39;,
+                                      targets = 2)))#&quot;_all&quot;
+  )</code></pre>
+<div id="htmlwidget-1" style="width:100%;height:auto;" class="datatables html-widget"></div>
+<script type="application/json" data-for="htmlwidget-1">{"x":{"filter":"none","data":[["2018-04-03","2019-01-30","2019-02-14","2019-02-19","2019-02-25","2019-03-08","2019-04-29","2019-05-17","2019-06-01","2019-06-19","2019-07-11","2019-07-22","2019-07-24","2019-07-24","2019-08-16","2019-09-30","2019-11-08","2019-11-21","2019-11-21","2019-12-18","2020-01-29","2020-03-03","2020-05-07","2020-06-11","2020-06-18","2020-06-24"],["REPJEFFDUNCAN","REPBYRNE","REPMARKGREEN","REPBYRNE","REPTOMREED","PETEOLSON","REPBYRNE","DOCABRAHAM","GOPLEADER","REPTOMREED","STEVESCALISE","GRESCHENTHALER","GOPLEADER","PERDUESENATE","REPTOMREED","STEVESCALISE","ROGERMARSHALLMD","ROGERMARSHALLMD","ROGERMARSHALLMD","REPANDYBIGGSAZ","BRADLEYBYRNE","STEVESCALISEGOP","ReElectHank","JamesComer","RepMarkGreen","LindseyGrahamSC"],["... A special thank you to the Oconee <span style=\"background-color:#dae2ba\">Democrat Party<\/span> for participating in one of my community forums last week . While we often don't ...","... This is just another example of how radical the <span style=\"background-color:#dae2ba\">Democrat Party<\/span> has become in trying to erase American ideals and values from our institutions . Absolutely ...","... What has happened to the <span style=\"background-color:#dae2ba\">Democrat party<\/span> ? Democrats , up until very recently , were a lot closer to the middle ...","... far in just the first month and a half of the 116th Congress , the <span style=\"background-color:#dae2ba\">Democrat Party<\/span> has become the Obstructionist Party : They have stood in the way of strong national ...","... It's time for the extremists in the <span style=\"background-color:#dae2ba\">Democrat party<\/span> to come to their senses and reject socialism . https://t.co/uQmuPDohGZ ...","... condemning bigoted and anti-Semitic remarks was necessary and that is the growing hatred in the <span style=\"background-color:#dae2ba\">Democrat party<\/span> for Israel and a sovereign Jewish nation . https://t.co/cJyHT6rCXA ...","... hearing in Congressional history to socialize our healthcare system in the US , the modern <span style=\"background-color:#dae2ba\">Democrat party<\/span> is most radical , far-left mainstream party in the history of our republic . https://t.co/aDZTk3jPjT ...","... \" Equality Act . \" \" This isn't about equality . This is about the <span style=\"background-color:#dae2ba\">Democrat Party<\/span> forcing their radical left agenda on the American people . #lagov #Doc4Gov https://t.co/NGLS5Rk6ET ...","... brewing in America between freedom vs . socialism - and given the state of today's <span style=\"background-color:#dae2ba\">Democrat Party<\/span> , it's a debate I look forward to having . https://t.co/MIeq5CO4TN ...","... Extremists in the <span style=\"background-color:#dae2ba\">Democrat party<\/span> blocking the development of our nation's energy infrastructure hurts the American people : ❌ No ...","... There are no moderates left in the <span style=\"background-color:#dae2ba\">Democrat party<\/span> . It's liberals vs . socialists now . . . and the socialists are winning ...","... about the upcoming Mueller hearing , Iran's recent escalations , and the new far left <span style=\"background-color:#dae2ba\">Democrat party<\/span> . https://t.co/pKe5OLixRN ...","... Has this new <span style=\"background-color:#dae2ba\">Socialist-Democrat Party<\/span> accomplished anything ? NO . But what they HAVE done is waste a lot of ...","... The <span style=\"background-color:#dae2ba\">Democrat Party<\/span> believes that the road to socialism runs through Georgia . That's why 16 Democrats running ...","... for nothing more then the badge and uniform they wear . Extremist politicians in the <span style=\"background-color:#dae2ba\">Democrat party<\/span> must end these cheap attacks . https://t.co/MRRYDrNqQT ...","... Radicals & amp ; socialists have taken over the <span style=\"background-color:#dae2ba\">Democrat Party<\/span> . They're calling all the shots now . Just last week , they pressured Pelosi ...","... Elizabeth Warren's agenda - and the agenda of today's <span style=\"background-color:#dae2ba\">Democrat Party<\/span> - is dangerous and radical . It would be a disaster for Kansas and all ...","... . @ewarren was just asked at the #DemDebate if there's room in today's <span style=\"background-color:#dae2ba\">Democrat Party<\/span> for pro-life Americans . She said no . ❌ She said \" abortion rights are ...","... rights , \" and that pro-abortion policies are \" fundamentally what we do in the <span style=\"background-color:#dae2ba\">Democratic Party<\/span> . \" ...","... to have threatened his staff if they continued working for him after he leaves the <span style=\"background-color:#dae2ba\">Democrat Party<\/span> . That's the Christmas spirit , Speaker Pelosi . ...","... I have a reminder for Doug Jones and his buddies in the national <span style=\"background-color:#dae2ba\">Democrat Party<\/span> : In Alabama , gun control means we use both hands ! I'll always stand ...","... . They spent years caving to their radicals . Now the socialist takeover of the <span style=\"background-color:#dae2ba\">Democrat Party<\/span> is complete . @realDonaldTrump will be the big winner today . https://t.co/FjjhIzGqMD ...","... Make your voice heard ! The <span style=\"background-color:#dae2ba\">@GeorgiaDemocrat Party<\/span> can help . At DPG Voter Protection , the mission is to provide the resources ...","... movement to Defund Police - the dumbest idea yet from the liberal wing of the <span style=\"background-color:#dae2ba\">Democrat Party<\/span> . I agree with my friend @Jim_Jordan - defunding the police is insanity ! #LawAndOrder ...","... I urge @SpeakerPelosi and the <span style=\"background-color:#dae2ba\">Democrat Party<\/span> to choose people over power - and open this economy NOW ! https://t.co/cRog5Mxmj2 ...","... @JoeBiden @SpeakerPelosi @SenSchumer @AOC @realDonaldTrump The <span style=\"background-color:#dae2ba\">Democrat Party<\/span> will be held captive by the most radical political mob in modern American history . ..."]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th>created_at<\/th>\n      <th>screen_name<\/th>\n      <th>context<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"sDom":"<\"bottom\">ip","columnDefs":[{"className":"dt-left","targets":2}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+</div>

@@ -1,0 +1,94 @@
+---
+title: twitter corpora & lexical patterns in context
+date: '2020-08-09'
+slug: twitter-corpora-lexical-patterns-in-context
+---
+
+
+
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+library(tidyverse)
+setwd('/home/jtimm/jt_work/GitHub/twitter_corpus/flexdash-tweet-search/')
+twitter_tif <- readRDS('sample_congress_tif.rds')
+```
+
+
+
+## Corpus & preparation
+
+Using `quanteda` and a [sample corpus of tweets](https://github.com/jaytimm/flexdash-tweet-search) from US lawmakers during the 115th & 116th congresses.
+
+```{r}
+qorp <- quanteda::corpus(twitter_tif)
+quanteda::docnames(qorp) <- twitter_tif$status_id
+```
+
+
+## Corpus search
+
+```{r}
+search <- 'Democrat party'
+```
+
+
+Here, a two-step process: 
+
+(1) Filter corpus to texts containing lexical pattern, and then 
+
+```{r}
+qsub1 <- quanteda::corpus_subset(qorp, 
+                                 grepl(search,   
+                                       quanteda::texts(qorp),
+                                       ignore.case = T))
+```
+
+
+
+(2) Highlight search in context.
+
+```{r}
+splits <- strsplit(search, '\\|')[[1]]
+
+srs <- lapply(splits, function(x) { 
+    quanteda::kwic(qsub1, 
+                   quanteda::phrase(x), 
+                   valuetype = "regex", 
+                   case_insensitive = T,
+                   window = 15)  })
+
+names(srs) <- splits
+```
+
+
+
+## Results
+
+```{r}
+results <- srs %>% 
+  data.table::rbindlist() %>%
+  left_join(quanteda::docvars(qorp), 
+            by = c('docname' = 'status_id')) %>%
+  mutate(context = paste0('... ',
+                          pre, 
+                          ' <span style="background-color:#dae2ba">',
+                          keyword,
+                          '</span> ',
+                          post,
+                          ' ...'))
+```
+
+
+
+
+```{r}
+results %>%
+  select(created_at, screen_name, context) %>%
+  DT::datatable(rownames = F,
+                escape = F,
+                options = list(sDom  = '<"bottom">ip',
+                               columnDefs = list(
+                                 list(className = 'dt-left',
+                                      targets = 2)))#"_all"
+  )
+```
