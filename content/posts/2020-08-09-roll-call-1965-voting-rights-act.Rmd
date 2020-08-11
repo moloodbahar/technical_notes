@@ -1,0 +1,191 @@
+---
+title: 'Roll call: 1965 Voting Rights Act'
+date: '2020-08-11'
+slug: roll-call-1965-voting-rights-act
+---
+
+
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+notes_dir <- '/home/jtimm/jt_work/GitHub/technical_notes/resources/historic-cds/'
+```
+
+> Roll call/summary of the 1965 Voting Rights Act, passed by the House on 9 July 1965, and signed into law on 6 August 1965 by LBJ.  Here, a quick map of the House vote.
+
+
+## Congressional districts in 1965
+
+[PoliSci folks at UCLA](http://cdmaps.polisci.ucla.edu/) make available shape files for every U.S. Congressional District in use between 1789 and 2012.
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(tigris); options(tigris_use_cache = TRUE, tigris_class = "sf")
+
+fname <- 'districts089'
+nonx <- c('78', '69', '66', '72', '60', '15', '02')
+
+states <- tigris::states(cb = TRUE) %>% 
+  data.frame() %>%
+  select(STATEFP, STUSPS) %>%
+  rename(state_abbrev = STUSPS)
+
+sf1 <- sf::st_read(dsn = paste0(notes_dir, fname), 
+                        layer = fname, 
+                        quiet = TRUE) %>%
+  mutate(STATEFP = substr(ID, 2, 3),
+         district_code = as.numeric(substr(ID, 11, 12))) %>%
+  left_join(states) %>%
+  filter(!STATEFP %in% nonx) %>%
+  select(STATEFP, state_abbrev, district_code) 
+```
+
+
+```{r message=FALSE, warning=FALSE}
+sf2 <- sf1 %>%
+  rmapshaper::ms_filter_islands() %>% # not sure that this is doing 3-- 
+  sf::st_transform(crs = "+init=epsg:4326") %>%
+  sf::st_simplify(preserveTopology = TRUE, dTolerance = 0.005)
+```
+
+
+
+## VoteView: roll call & lawmaker details
+
+Roll call for VOTING RIGHTS ACT OF 1965, and legislator details, eg, party affiliation, via `Rvoteview`.
+
+```{r message=FALSE, warning=FALSE}
+makers <- Rvoteview::download_metadata(type = 'members', 
+                                       chamber = 'house', 
+                                       congress = 89) %>%
+  filter(state_abbrev != 'USA') %>%
+  select(icpsr, state_abbrev, district_code, bioname, party_code) %>%
+  mutate(party_code = ifelse(party_code==200, 'Rep', 'Dem'),
+         icpsr = as.character(icpsr),
+         district_code = as.integer(district_code)) 
+```
+
+
+
+```{r eval=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+vra <- Rvoteview::voteview_search('("VOTING RIGHTS ACT OF 1965") AND (congress:89) 
+                                  AND (chamber:house)') %>%
+                                  filter( date == '1965-07-09')
+
+votes <- Rvoteview::voteview_download(vra$id)
+names(votes) <- gsub('\\.', '_', names(votes))
+```
+
+
+```{r eval=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+vra <- Rvoteview::voteview_search('("VOTING RIGHTS ACT OF 1965") AND (congress:89) 
+                                  AND (chamber:house)') %>%
+                                  filter( date == '1965-07-09')
+
+votes <- Rvoteview::voteview_download(vra$id)
+names(votes) <- gsub('\\.', '_', names(votes))
+```
+
+
+Identify at-large representatives to address labeling discrepancies.
+
+```{r}
+atls <- makers %>%
+  filter(bioname %in% votes$legis_data$name) %>%
+  group_by(state_abbrev) %>%
+  mutate(n = length(district_code)) %>%
+  filter(n == 1)
+```
+
+
+
+```{r message=FALSE, warning=FALSE}
+full <- votes$votes_long %>%
+  inner_join(makers) %>%
+  janitor::clean_names()%>%
+  filter(state_abbrev != 'USA') %>%
+  mutate(avote = case_when(vote == 1 ~ 'Yea',
+                           vote == 6 ~ 'Nay',
+                           !vote %in% c(1,6) ~ 'Not voting'),
+         Party_Member_Vote = paste0(party_code, ': ', avote),
+         ## fix at-large -- 
+         district_code = ifelse(state_abbrev %in% atls$state_abbrev,
+                                0, district_code))
+```
+
+
+
+```{r echo=FALSE}
+set.seed(789)
+full %>%
+  select(state_abbrev:avote) %>%
+  sample_n(5) %>%
+  knitr::kable()
+```
+
+
+## Roll Call
+
+```{r}
+full$Party_Member_Vote <- factor(full$Party_Member_Vote)
+full$Party_Member_Vote <- 
+  factor(full$Party_Member_Vote, 
+         levels(full$Party_Member_Vote)[c(3,6,1,4,2,5)])
+
+full %>% 
+  group_by(Party_Member_Vote) %>%
+  count() %>%
+  knitr::kable()
+```
+
+
+
+
+```{r message=FALSE, warning=FALSE}
+fo_leaf <- sf2 %>%
+  left_join(full %>% 
+              ## weirdness re at-large @ 1965 -- TWO REPS/ONE GEO -- 
+              group_by(state_abbrev, district_code, party_code) %>%
+              slice(1) %>%
+              mutate(district_code = ifelse(district_code == 98, 
+                                            0, district_code)) %>%
+              ungroup() ) %>%
+  na.omit() %>%
+  sf::st_set_crs('+proj=longlat +datum=WGS84')
+```
+
+
+
+
+```{r message=FALSE, warning=FALSE}
+pal <- leaflet::colorFactor(palette = wnomadds::voteview_pal, 
+                   domain = fo_leaf$Party_Member_Vote)
+
+fl <- fo_leaf %>%
+        leaflet::leaflet() %>%
+        leaflet::addProviderTiles("CartoDB.Positron") %>%
+        leaflet::setView(lng = -98.35, lat = 39.5, zoom = 4) %>%
+  
+  #options = providerTileOptions (minZoom = 6, maxZoom = 10)) %>%
+        leaflet::addPolygons(label = ~bioname,
+                    fill = TRUE,
+                    stroke = TRUE, 
+                    weight=1,
+                    fillOpacity = 1,
+                    color="white",
+                    fillColor = ~pal(Party_Member_Vote)) %>%
+  
+        leaflet::addLegend("topleft", 
+                  pal = pal, 
+                  values = ~ Party_Member_Vote,
+                  title = "Roll call",
+                  opacity = 1)
+
+widgetframe::frameWidget(fl, width="100%", height = '700')
+```
+
+
+<br>
+
+## References
+
+Jeffrey B. Lewis, Brandon DeVine, Lincoln Pitcher, and Kenneth C. Martis. (2013) Digital Boundary Definitions of United States Congressional Districts, 1789-2012. [Data file and code book]. Retrieved from http://cdmaps.polisci.ucla.edu on [10 August 2020].

@@ -1,0 +1,212 @@
+---
+title: 'Roll call: 1965 Voting Rights Act'
+date: '2020-08-11'
+slug: roll-call-1965-voting-rights-act
+---
+
+<script src="/rmarkdown-libs/htmlwidgets/htmlwidgets.js"></script>
+<script src="/rmarkdown-libs/pymjs/pym.v1.js"></script>
+<script src="/rmarkdown-libs/widgetframe-binding/widgetframe.js"></script>
+
+
+<blockquote>
+<p>Roll call/summary of the 1965 Voting Rights Act, passed by the House on 9 July 1965, and signed into law on 6 August 1965 by LBJ. Here, a quick map of the House vote.</p>
+</blockquote>
+<div id="congressional-districts-in-1965" class="section level2">
+<h2>Congressional districts in 1965</h2>
+<p><a href="http://cdmaps.polisci.ucla.edu/">PoliSci folks at UCLA</a> make available shape files for every U.S. Congressional District in use between 1789 and 2012.</p>
+<pre class="r"><code>library(tidyverse)
+library(tigris); options(tigris_use_cache = TRUE, tigris_class = &quot;sf&quot;)
+
+fname &lt;- &#39;districts089&#39;
+nonx &lt;- c(&#39;78&#39;, &#39;69&#39;, &#39;66&#39;, &#39;72&#39;, &#39;60&#39;, &#39;15&#39;, &#39;02&#39;)
+
+states &lt;- tigris::states(cb = TRUE) %&gt;% 
+  data.frame() %&gt;%
+  select(STATEFP, STUSPS) %&gt;%
+  rename(state_abbrev = STUSPS)
+
+sf1 &lt;- sf::st_read(dsn = paste0(notes_dir, fname), 
+                        layer = fname, 
+                        quiet = TRUE) %&gt;%
+  mutate(STATEFP = substr(ID, 2, 3),
+         district_code = as.numeric(substr(ID, 11, 12))) %&gt;%
+  left_join(states) %&gt;%
+  filter(!STATEFP %in% nonx) %&gt;%
+  select(STATEFP, state_abbrev, district_code) </code></pre>
+<pre class="r"><code>sf2 &lt;- sf1 %&gt;%
+  rmapshaper::ms_filter_islands() %&gt;% # not sure that this is doing 3-- 
+  sf::st_transform(crs = &quot;+init=epsg:4326&quot;) %&gt;%
+  sf::st_simplify(preserveTopology = TRUE, dTolerance = 0.005)</code></pre>
+</div>
+<div id="voteview-roll-call-lawmaker-details" class="section level2">
+<h2>VoteView: roll call &amp; lawmaker details</h2>
+<p>Roll call for VOTING RIGHTS ACT OF 1965, and legislator details, eg, party affiliation, via <code>Rvoteview</code>.</p>
+<pre class="r"><code>makers &lt;- Rvoteview::download_metadata(type = &#39;members&#39;, 
+                                       chamber = &#39;house&#39;, 
+                                       congress = 89) %&gt;%
+  filter(state_abbrev != &#39;USA&#39;) %&gt;%
+  select(icpsr, state_abbrev, district_code, bioname, party_code) %&gt;%
+  mutate(party_code = ifelse(party_code==200, &#39;Rep&#39;, &#39;Dem&#39;),
+         icpsr = as.character(icpsr),
+         district_code = as.integer(district_code)) </code></pre>
+<pre><code>## [1] &quot;/tmp/RtmpSzjfFD/H089_members.csv&quot;</code></pre>
+<pre class="r"><code>vra &lt;- Rvoteview::voteview_search(&#39;(&quot;VOTING RIGHTS ACT OF 1965&quot;) AND (congress:89) 
+                                  AND (chamber:house)&#39;) %&gt;%
+                                  filter( date == &#39;1965-07-09&#39;)
+
+votes &lt;- Rvoteview::voteview_download(vra$id)
+names(votes) &lt;- gsub(&#39;\\.&#39;, &#39;_&#39;, names(votes))</code></pre>
+<p>Identify at-large representatives to address labeling discrepancies.</p>
+<pre class="r"><code>atls &lt;- makers %&gt;%
+  filter(bioname %in% votes$legis_data$name) %&gt;%
+  group_by(state_abbrev) %&gt;%
+  mutate(n = length(district_code)) %&gt;%
+  filter(n == 1)</code></pre>
+<pre class="r"><code>full &lt;- votes$votes_long %&gt;%
+  inner_join(makers) %&gt;%
+  janitor::clean_names()%&gt;%
+  filter(state_abbrev != &#39;USA&#39;) %&gt;%
+  mutate(avote = case_when(vote == 1 ~ &#39;Yea&#39;,
+                           vote == 6 ~ &#39;Nay&#39;,
+                           !vote %in% c(1,6) ~ &#39;Not voting&#39;),
+         Party_Member_Vote = paste0(party_code, &#39;: &#39;, avote),
+         ## fix at-large -- 
+         district_code = ifelse(state_abbrev %in% atls$state_abbrev,
+                                0, district_code))</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">state_abbrev</th>
+<th align="right">district_code</th>
+<th align="left">bioname</th>
+<th align="left">party_code</th>
+<th align="left">avote</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">OH</td>
+<td align="right">7</td>
+<td align="left">BROWN, Clarence J.</td>
+<td align="left">Rep</td>
+<td align="left">Yea</td>
+</tr>
+<tr class="even">
+<td align="left">NY</td>
+<td align="right">28</td>
+<td align="left">RESNICK, Joseph Yale</td>
+<td align="left">Dem</td>
+<td align="left">Yea</td>
+</tr>
+<tr class="odd">
+<td align="left">TN</td>
+<td align="right">7</td>
+<td align="left">MURRAY, Thomas Jefferson</td>
+<td align="left">Dem</td>
+<td align="left">Nay</td>
+</tr>
+<tr class="even">
+<td align="left">OH</td>
+<td align="right">4</td>
+<td align="left">McCULLOCH, William Moore</td>
+<td align="left">Rep</td>
+<td align="left">Yea</td>
+</tr>
+<tr class="odd">
+<td align="left">ME</td>
+<td align="right">2</td>
+<td align="left">HATHAWAY, William Dodd</td>
+<td align="left">Dem</td>
+<td align="left">Yea</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="roll-call" class="section level2">
+<h2>Roll Call</h2>
+<pre class="r"><code>full$Party_Member_Vote &lt;- factor(full$Party_Member_Vote)
+full$Party_Member_Vote &lt;- 
+  factor(full$Party_Member_Vote, 
+         levels(full$Party_Member_Vote)[c(3,6,1,4,2,5)])
+
+full %&gt;% 
+  group_by(Party_Member_Vote) %&gt;%
+  count() %&gt;%
+  knitr::kable()</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Party_Member_Vote</th>
+<th align="right">n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Dem: Yea</td>
+<td align="right">221</td>
+</tr>
+<tr class="even">
+<td align="left">Rep: Yea</td>
+<td align="right">112</td>
+</tr>
+<tr class="odd">
+<td align="left">Dem: Nay</td>
+<td align="right">62</td>
+</tr>
+<tr class="even">
+<td align="left">Rep: Nay</td>
+<td align="right">23</td>
+</tr>
+<tr class="odd">
+<td align="left">Dem: Not voting</td>
+<td align="right">10</td>
+</tr>
+<tr class="even">
+<td align="left">Rep: Not voting</td>
+<td align="right">5</td>
+</tr>
+</tbody>
+</table>
+<pre class="r"><code>fo_leaf &lt;- sf2 %&gt;%
+  left_join(full %&gt;% 
+              ## weirdness re at-large @ 1965 -- TWO REPS/ONE GEO -- 
+              group_by(state_abbrev, district_code, party_code) %&gt;%
+              slice(1) %&gt;%
+              mutate(district_code = ifelse(district_code == 98, 
+                                            0, district_code)) %&gt;%
+              ungroup() ) %&gt;%
+  na.omit() %&gt;%
+  sf::st_set_crs(&#39;+proj=longlat +datum=WGS84&#39;)</code></pre>
+<pre class="r"><code>pal &lt;- leaflet::colorFactor(palette = wnomadds::voteview_pal, 
+                   domain = fo_leaf$Party_Member_Vote)
+
+fl &lt;- fo_leaf %&gt;%
+        leaflet::leaflet() %&gt;%
+        leaflet::addProviderTiles(&quot;CartoDB.Positron&quot;) %&gt;%
+        leaflet::setView(lng = -98.35, lat = 39.5, zoom = 4) %&gt;%
+  
+  #options = providerTileOptions (minZoom = 6, maxZoom = 10)) %&gt;%
+        leaflet::addPolygons(label = ~bioname,
+                    fill = TRUE,
+                    stroke = TRUE, 
+                    weight=1,
+                    fillOpacity = 1,
+                    color=&quot;white&quot;,
+                    fillColor = ~pal(Party_Member_Vote)) %&gt;%
+  
+        leaflet::addLegend(&quot;topleft&quot;, 
+                  pal = pal, 
+                  values = ~ Party_Member_Vote,
+                  title = &quot;Roll call&quot;,
+                  opacity = 1)
+
+widgetframe::frameWidget(fl, width=&quot;100%&quot;, height = &#39;700&#39;)</code></pre>
+<div id="htmlwidget-1" style="width:100%;height:700px;" class="widgetframe html-widget"></div>
+<script type="application/json" data-for="htmlwidget-1">{"x":{"url":"/posts/2020-08-09-roll-call-1965-voting-rights-act_files/figure-html//widgets/widget_unnamed-chunk-12.html","options":{"xdomain":"*","allowfullscreen":false,"lazyload":false}},"evals":[],"jsHooks":[]}</script>
+<p><br></p>
+</div>
+<div id="references" class="section level2">
+<h2>References</h2>
+<p>Jeffrey B. Lewis, Brandon DeVine, Lincoln Pitcher, and Kenneth C. Martis. (2013) Digital Boundary Definitions of United States Congressional Districts, 1789-2012. [Data file and code book]. Retrieved from <a href="http://cdmaps.polisci.ucla.edu" class="uri">http://cdmaps.polisci.ucla.edu</a> on [10 August 2020].</p>
+</div>

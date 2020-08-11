@@ -125,6 +125,6 @@ new_results <- text2vec::check_analogy_accuracy(
 
 ## Summary
 
-For a slightly more detailed description of vector space evaluation via word analogy tasks, see this [brief note](https://github.com/jaytimm/tech-notes-american-politics/blob/master/notes/analogy-tests.md).
+For a slightly more detailed description of vector space evaluation via word analogy tasks, see this [brief note](https://www.puremoe.net/posts/vector-space-analogy-briefly/).
 
 

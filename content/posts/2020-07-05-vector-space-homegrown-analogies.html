@@ -120,18 +120,18 @@ writeLines(new_test$full,&#39;new_test.txt&#39;)
 new_analogy_set &lt;- text2vec::prepare_analogy_questions(
         questions_file_path = paste0(git_files, &#39;new_test.txt&#39;), 
         vocab_terms = rownames(qvec))</code></pre>
-<pre><code>## INFO  [07:49:05.144] 54 full questions found out of 112 total</code></pre>
+<pre><code>## INFO  [20:39:21.315] 54 full questions found out of 112 total</code></pre>
 </div>
 <div id="evaluate-via-text2vec" class="section level2">
 <h2>Evaluate via <code>text2vec</code></h2>
 <pre class="r"><code>new_results &lt;- text2vec::check_analogy_accuracy(
   questions_list = new_analogy_set, 
   m_word_vectors = qvec)</code></pre>
-<pre><code>## INFO  [07:49:05.482] type1: correct 1 out of 12, accuracy = 0.0833 
-## INFO  [07:49:05.719] type2: correct 0 out of 42, accuracy = 0.0000 
-## INFO  [07:49:05.729] OVERALL ACCURACY = 0.0185</code></pre>
+<pre><code>## INFO  [20:39:21.486] type1: correct 1 out of 12, accuracy = 0.0833 
+## INFO  [20:39:21.693] type2: correct 0 out of 42, accuracy = 0.0000 
+## INFO  [20:39:21.703] OVERALL ACCURACY = 0.0185</code></pre>
 </div>
 <div id="summary" class="section level2">
 <h2>Summary</h2>
-<p>For a slightly more detailed description of vector space evaluation via word analogy tasks, see this <a href="https://github.com/jaytimm/tech-notes-american-politics/blob/master/notes/analogy-tests.md">brief note</a>.</p>
+<p>For a slightly more detailed description of vector space evaluation via word analogy tasks, see this <a href="https://www.puremoe.net/posts/vector-space-analogy-briefly/">brief note</a>.</p>
 </div>

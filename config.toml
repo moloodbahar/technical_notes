@@ -2,7 +2,7 @@
 baseURL = "https://www.puremoe.net/"
 
 languageCode = "en-us"
-title = "technical notes"
+title = "notes"
 theme = "hugo-theme-one"
 googleAnalytics = "UA-174991735-1"
 
