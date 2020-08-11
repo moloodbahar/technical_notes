@@ -1,7 +1,7 @@
 ---
-title: things rememebered
+title: things remembered
 date: '2020-01-23'
-slug: things-rememebered
+slug: things-remembered
 ---
 
 Via a sample of sentences extracted at random from the full Gutenberg Corpus.  Sampled again here for sentences beginning with `I remember`. 

@@ -32,8 +32,6 @@ search <- 'Democrat party'
 ```
 
 
-Here, a two-step process: 
-
 (1) Filter corpus to texts containing lexical pattern, and then 
 
 ```{r}
