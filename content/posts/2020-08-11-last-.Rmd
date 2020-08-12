@@ -10,7 +10,7 @@ library(tidyverse)
 prez <- read.csv('https://raw.githubusercontent.com/jaytimm/us_pres_elections_by_state/master/pres_elections_state.csv')
 
 last_dem <- prez %>%
-  filter(party == 'Democrat' & winner == 1) %>%
+  filter(party == 'Democrat' & winner == 1) %>% # state winner 
   group_by(GEOID) %>%
   filter(year == max(year)) %>%
   ungroup() %>%
