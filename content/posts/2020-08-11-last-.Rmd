@@ -1,0 +1,62 @@
+---
+title: last vote for a democratic presidential candidate
+date: '2020-08-11'
+slug: last-dem-vote
+---
+
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+prez <- read.csv('https://raw.githubusercontent.com/jaytimm/us_pres_elections_by_state/master/pres_elections_state.csv')
+
+last_dem <- prez %>%
+  filter(party == 'Democrat' & winner == 1) %>%
+  group_by(GEOID) %>%
+  filter(year == max(year)) %>%
+  ungroup() %>%
+  mutate(label = paste0(year, ' - ', candidate))
+```
+
+
+
+**Nine US states** have not voted for a Democratic Presidential candidate since LBJ.  
+
+```{r message=FALSE, warning=FALSE}
+last_dem %>%
+  group_by(year, candidate) %>%
+  summarise(n = n()) %>%
+  knitr::kable()
+```
+
+
+```{r fig.height=6, message=FALSE, warning=FALSE}
+library(sf)
+outer <- uspoliticalextras::uspol_dkos_equalarea_sf$tile_outer
+inner <- uspoliticalextras::uspol_dkos_equalarea_sf$tile_inner
+
+outer %>% 
+  mutate(GEOID = as.integer(as.character((GEOID)))) %>%
+  left_join(last_dem %>% select(GEOID, label), by ='GEOID') %>%
+  ggplot() + 
+  geom_sf(aes(fill = label),
+          color = 'black' , 
+          alpha = .85) + 
+  ggsflabel::geom_sf_text(data = inner,
+                          aes(label = state_abbrev), 
+                          size = 3,
+                          color = 'white') +
+  theme_minimal() +
+  ggthemes::scale_fill_stata() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        legend.title=element_blank(),
+        legend.position = 'bottom') +
+  labs(title = "Last vote for a Democratic Presidential candidate")
+```
+
+
+
+
+

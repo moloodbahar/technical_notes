@@ -1,0 +1,93 @@
+---
+title: last vote for a democratic presidential candidate
+date: '2020-08-11'
+slug: last-dem-vote
+---
+
+
+
+<pre class="r"><code>library(tidyverse)
+prez &lt;- read.csv(&#39;https://raw.githubusercontent.com/jaytimm/us_pres_elections_by_state/master/pres_elections_state.csv&#39;)
+
+last_dem &lt;- prez %&gt;%
+  filter(party == &#39;Democrat&#39; &amp; winner == 1) %&gt;%
+  group_by(GEOID) %&gt;%
+  filter(year == max(year)) %&gt;%
+  ungroup() %&gt;%
+  mutate(label = paste0(year, &#39; - &#39;, candidate))</code></pre>
+<p><strong>Nine US states</strong> have not voted for a Democratic Presidential candidate since LBJ.</p>
+<pre class="r"><code>last_dem %&gt;%
+  group_by(year, candidate) %&gt;%
+  summarise(n = n()) %&gt;%
+  knitr::kable()</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="right">year</th>
+<th align="left">candidate</th>
+<th align="right">n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">1964</td>
+<td align="left">Lyndon B. Johnson</td>
+<td align="right">9</td>
+</tr>
+<tr class="even">
+<td align="right">1976</td>
+<td align="left">Jimmy Carter</td>
+<td align="right">4</td>
+</tr>
+<tr class="odd">
+<td align="right">1992</td>
+<td align="left">Bill Clinton</td>
+<td align="right">2</td>
+</tr>
+<tr class="even">
+<td align="right">1996</td>
+<td align="left">Bill Clinton</td>
+<td align="right">7</td>
+</tr>
+<tr class="odd">
+<td align="right">2008</td>
+<td align="left">Barack Obama</td>
+<td align="right">2</td>
+</tr>
+<tr class="even">
+<td align="right">2012</td>
+<td align="left">Barack Obama</td>
+<td align="right">6</td>
+</tr>
+<tr class="odd">
+<td align="right">2016</td>
+<td align="left">Hillary Clinton</td>
+<td align="right">21</td>
+</tr>
+</tbody>
+</table>
+<pre class="r"><code>library(sf)
+outer &lt;- uspoliticalextras::uspol_dkos_equalarea_sf$tile_outer
+inner &lt;- uspoliticalextras::uspol_dkos_equalarea_sf$tile_inner
+
+outer %&gt;% 
+  mutate(GEOID = as.integer(as.character((GEOID)))) %&gt;%
+  left_join(last_dem %&gt;% select(GEOID, label), by =&#39;GEOID&#39;) %&gt;%
+  ggplot() + 
+  geom_sf(aes(fill = label),
+          color = &#39;black&#39; , 
+          alpha = .85) + 
+  ggsflabel::geom_sf_text(data = inner,
+                          aes(label = state_abbrev), 
+                          size = 3,
+                          color = &#39;white&#39;) +
+  theme_minimal() +
+  ggthemes::scale_fill_stata() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        legend.title=element_blank(),
+        legend.position = &#39;bottom&#39;) +
+  labs(title = &quot;Last vote for a Democratic Presidential candidate&quot;)</code></pre>
+<p><img src="/posts/2020-08-11-last-_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>

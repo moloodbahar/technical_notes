@@ -1,5 +1,5 @@
 ---
-title: 'Roll call: 1965 Voting Rights Act'
+title: 'roll call: 1965 Voting Rights Act'
 date: '2020-08-11'
 slug: roll-call-1965-voting-rights-act
 ---
