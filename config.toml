@@ -16,6 +16,7 @@ MathJaxCDN = "//cdn.bootcss.com"
 MathJaxVersion = "2.7.1"
     
 
+ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
 
 
 [params]

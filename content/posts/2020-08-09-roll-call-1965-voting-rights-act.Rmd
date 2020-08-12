@@ -42,7 +42,7 @@ sf1 <- sf::st_read(dsn = paste0(notes_dir, fname),
 
 ```{r message=FALSE, warning=FALSE}
 sf2 <- sf1 %>%
-  rmapshaper::ms_filter_islands() %>% # not sure that this is doing 3-- 
+  rmapshaper::ms_filter_islands()  %>% # not sure that this is doing 3-- 
   sf::st_transform(crs = "+init=epsg:4326") %>%
   sf::st_simplify(preserveTopology = TRUE, dTolerance = 0.005)
 ```
