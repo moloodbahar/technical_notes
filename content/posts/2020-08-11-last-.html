@@ -10,7 +10,7 @@ slug: last-dem-vote
 prez &lt;- read.csv(&#39;https://raw.githubusercontent.com/jaytimm/us_pres_elections_by_state/master/pres_elections_state.csv&#39;)
 
 last_dem &lt;- prez %&gt;%
-  filter(party == &#39;Democrat&#39; &amp; winner == 1) %&gt;%
+  filter(party == &#39;Democrat&#39; &amp; winner == 1) %&gt;% # state winner 
   group_by(GEOID) %&gt;%
   filter(year == max(year)) %&gt;%
   ungroup() %&gt;%
