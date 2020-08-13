@@ -89,7 +89,7 @@ splits <- strsplit(search, '\\|')[[1]]  ##
 
 srs <- lapply(splits, function(x) { 
     quanteda::kwic(qsub1, 
-                   quanteda::phrase(search_better(x)), # which is just strsplit on ' ' -- 
+                   quanteda::phrase(search_better(x)),
                    valuetype = "regex", 
                    case_insensitive = T,
                    window = 15)  })

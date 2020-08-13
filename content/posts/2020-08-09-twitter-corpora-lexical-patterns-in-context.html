@@ -42,7 +42,7 @@ quanteda::docnames(qorp) &lt;- twitter_tif$status_id</code></pre>
 
 srs &lt;- lapply(splits, function(x) { 
     quanteda::kwic(qsub1, 
-                   quanteda::phrase(search_better(x)), # which is just strsplit on &#39; &#39; -- 
+                   quanteda::phrase(search_better(x)),
                    valuetype = &quot;regex&quot;, 
                    case_insensitive = T,
                    window = 15)  })
