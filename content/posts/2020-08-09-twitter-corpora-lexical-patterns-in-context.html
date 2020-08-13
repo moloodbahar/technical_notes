@@ -37,9 +37,8 @@ quanteda::docnames(qorp) &lt;- twitter_tif$status_id</code></pre>
 <pre class="r"><code>search_better &lt;- function(x) {
   a1 &lt;- gsub(&#39;(^ )([[:alnum:]])&#39;, &#39;^\\2&#39;, x)  
   a2 &lt;- gsub(&#39;( )([[:alnum:]])&#39;, &#39;\\1^\\2&#39;, a1)
-  trimws(gsub(&#39;([[:alnum:]])( )&#39;, &#39;\\1$\\2&#39;, a2))  }
-
-splits &lt;- strsplit(search, &#39;\\|&#39;)[[1]]  ## 
+  trimws(gsub(&#39;([[:alnum:]])( )&#39;, &#39;\\1$\\2&#39;, a2))  }</code></pre>
+<pre class="r"><code>splits &lt;- strsplit(search, &#39;\\|&#39;)[[1]]  ## 
 
 srs &lt;- lapply(splits, function(x) { 
     quanteda::kwic(qsub1, 

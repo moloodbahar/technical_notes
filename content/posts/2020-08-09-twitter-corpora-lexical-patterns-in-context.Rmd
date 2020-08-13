@@ -75,12 +75,16 @@ qsub1 <- quanteda::corpus_subset(qorp,
 ```
 
 
+
 ```{r}
 search_better <- function(x) {
   a1 <- gsub('(^ )([[:alnum:]])', '^\\2', x)  
   a2 <- gsub('( )([[:alnum:]])', '\\1^\\2', a1)
   trimws(gsub('([[:alnum:]])( )', '\\1$\\2', a2))  }
+```
 
+
+```{r}
 splits <- strsplit(search, '\\|')[[1]]  ## 
 
 srs <- lapply(splits, function(x) { 
