@@ -57,5 +57,5 @@ x <- cds1 %>%
   leaflet::addLayersControl(position = "topright", 
                             baseGroups = c("Actual", "Equal-area"))
 
-widgetframe::frameWidget(x, width="100%", height = '450')
+widgetframe::frameWidget(x, width="100%")
 ```
