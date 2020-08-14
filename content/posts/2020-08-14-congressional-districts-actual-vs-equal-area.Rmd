@@ -10,7 +10,7 @@ tags: []
 
 
 ```{r message=FALSE, warning=FALSE}
-library(tidyverse)
+library(tidyverse) 
 library(tigris); options(tigris_use_cache = TRUE, tigris_class = "sf")
 nonx <- c('78', '69', '66', '72', '60', '15', '02')
 
