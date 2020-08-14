@@ -1,0 +1,59 @@
+---
+title: 'congressional districts: actual- vs.equal-area'
+author: ''
+date: '2020-08-14'
+slug: congressional-districts-actual-vs-equal-area
+categories: []
+tags: []
+---
+
+
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(tigris); options(tigris_use_cache = TRUE, tigris_class = "sf")
+nonx <- c('78', '69', '66', '72', '60', '15', '02')
+
+cds1 <- tigris::congressional_districts(cb = T) %>%
+  filter(!STATEFP %in% nonx) %>%
+  mutate(STATEFP = as.integer(STATEFP)) %>%
+  sf::st_set_crs('+proj=longlat +datum=WGS84')
+
+cds2 <- uspoliticalextras::uspol_dkos_equalarea_sf$hex_cds %>%
+  mutate(STATEFP = as.integer(gsub('..$', '', GEOID))) 
+```
+
+
+
+
+```{r message=FALSE, warning=FALSE}
+pal <- leaflet::colorFactor(
+  randomcoloR::distinctColorPalette(length(unique(cds2$STATEFP))), 
+  cds2$STATEFP)
+
+cds1 %>%
+  leaflet::leaflet() %>%
+  leaflet::addPolygons(
+    label = ~GEOID,
+    fill = T,
+    stroke = TRUE,
+    weight = 2,
+    fillOpacity = 1, 
+    color = "gray", 
+    fillColor = ~pal(STATEFP), 
+    group = 'Actual')  %>%
+  
+   leaflet::addPolygons(
+     data = cds2,
+     label = ~GEOID,
+     fill = T,
+     stroke = TRUE, 
+     weight = 2,
+     fillOpacity = 1,
+     color = "gray",
+     fillColor = ~pal(STATEFP),
+     group = 'Equal-area')%>%
+  
+  leaflet::addLayersControl(position = "topright", 
+                            baseGroups = c("Actual", "Equal-area"))
+```
